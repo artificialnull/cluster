@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:mapbox="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/layout"
+    android:fitsSystemWindows="false"
+    tools:context=".MapActivity">
+
+    <ProgressBar
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="128dp"
+        android:id="@+id/spinner"
+        />
+
+    <com.mapbox.mapboxsdk.maps.MapView
+        android:clipToPadding="false"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/mapView"
+        android:visibility="invisible"
+        />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/postFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:padding="16dp"
+        android:src="@drawable/new_post"
+        android:layout_gravity="bottom|end"
+        app:rippleColor="@color/primaryColor"
+        app:useCompatPadding="true"
+        />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/locateFab"
+        app:backgroundTint="@android:color/white"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:src="@drawable/find_location"
+        android:layout_gravity="top|end"
+        app:rippleColor="@color/primaryColor"
+        app:layout_anchor="@id/postFab"
+        app:layout_anchorGravity="top"
+        app:useCompatPadding="true"
+
+        />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
