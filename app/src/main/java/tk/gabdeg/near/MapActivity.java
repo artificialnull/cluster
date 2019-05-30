@@ -38,6 +38,8 @@ import com.mapbox.mapboxsdk.plugins.annotation.Symbol;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolManager;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
+import com.mapbox.mapboxsdk.style.layers.CircleLayer;
+import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
@@ -62,6 +64,31 @@ public class MapActivity extends AppCompatActivity {
     private Style mapboxStyle;
     private ProgressBar spinner;
     private Symbol locationMarker;
+
+    int mixTwoColors(int color1, int color2, float amount) {
+        final byte ALPHA_CHANNEL = 24;
+        final byte RED_CHANNEL = 16;
+        final byte GREEN_CHANNEL = 8;
+        final byte BLUE_CHANNEL = 0;
+
+        final float inverseAmount = 1.0f - amount;
+
+        int a = ((int) (((float) (color1 >> ALPHA_CHANNEL & 0xff) * amount) +
+                ((float) (color2 >> ALPHA_CHANNEL & 0xff) * inverseAmount))) & 0xff;
+        int r = ((int) (((float) (color1 >> RED_CHANNEL & 0xff) * amount) +
+                ((float) (color2 >> RED_CHANNEL & 0xff) * inverseAmount))) & 0xff;
+        int g = ((int) (((float) (color1 >> GREEN_CHANNEL & 0xff) * amount) +
+                ((float) (color2 >> GREEN_CHANNEL & 0xff) * inverseAmount))) & 0xff;
+        int b = ((int) (((float) (color1 & 0xff) * amount) +
+                ((float) (color2 & 0xff) * inverseAmount))) & 0xff;
+
+        return a << ALPHA_CHANNEL | r << RED_CHANNEL | g << GREEN_CHANNEL | b << BLUE_CHANNEL;
+    }
+
+    String mixColorsHex(int color1, int color2, double amount) {
+        int mixed = 0xFF000000 + mixTwoColors(color1, color2, (float) amount);
+        return String.format("#%06X", (0xFFFFFF & mixed));
+    }
 
     int getNavBarHeight() {
         Resources resources = getResources();
@@ -228,30 +255,58 @@ public class MapActivity extends AppCompatActivity {
                 } catch (JSONException e) {
                     Log.d("points", "bad json!");
                 }
-                GeoJsonSource source =  new GeoJsonSource("points", jsonStr, new GeoJsonOptions()
+                GeoJsonSource source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions()
                         .withCluster(true)
                         //.withMaxZoom(14)
-                        .withClusterRadius(32));
+                        .withClusterRadius(64));
                 mapboxStyle.addSource(
                         source
                 );
 
                 Log.d("points", id + " points created");
 
-                Log.d("points", "adding base layer");
-                mapboxStyle.addLayer(new SymbolLayer("points", "points").withProperties(
-                        PropertyFactory.iconImage(POST_ICON),
-                        PropertyFactory.iconColor(getResources().getColor(R.color.secondaryColor)),
-                        PropertyFactory.iconAllowOverlap(true)
+                float defaultRadius = 10f;
+                int defaultColor = getResources().getColor(R.color.secondaryColor);
+                int clusteredColor = getResources().getColor(R.color.clusteredColor);
 
+                //Log.d("points", String.format("#%06X", (0xFFFFFF & defaultColor)));
+                //Log.d("points", String.format("#%06X", (0xFFFFFF & scaleColorYellow(defaultColor, 0.5))));
+
+                Log.d("points", "adding base layer");
+                mapboxStyle.addLayer(new CircleLayer("points", "points").withProperties(
+                        PropertyFactory.circleColor(defaultColor),
+                        PropertyFactory.circleRadius(defaultRadius)
                 ));
-                Log.d("points", "adding text layer");
-                mapboxStyle.addLayer(new SymbolLayer("count", "points").withProperties(
-                        PropertyFactory.textField(Expression.toString(Expression.get("point_count"))),
-                        PropertyFactory.textSize(14f),
-                        PropertyFactory.textColor(Color.BLACK),
-                        PropertyFactory.textAllowOverlap(true)
-                ));
+                CircleLayer clusterLayer = new CircleLayer("points-clustered", "points").withProperties(
+                        PropertyFactory.circleColor(
+                                Expression.step(
+                                        Expression.get("point_count"),
+                                        Expression.literal(mixColorsHex(defaultColor, clusteredColor, 0.75)),
+                                        Expression.stop(10, mixColorsHex(defaultColor, clusteredColor, 0.5)),
+                                        Expression.stop(100, mixColorsHex(defaultColor, clusteredColor, 0.25)),
+                                        Expression.stop(1000, mixColorsHex(defaultColor, clusteredColor, 0))
+                                )
+                        ),
+                        PropertyFactory.circleRadius(
+                                Expression.product(
+                                        Expression.sum(
+                                                Expression.literal(1.5),
+                                                Expression.division(
+                                                        Expression.log10(
+                                                                Expression.get("point_count")
+                                                        ),
+                                                        Expression.literal(2)
+                                                )
+                                        ),
+                                        Expression.literal(defaultRadius)
+                                )
+                        ),
+                        PropertyFactory.circleStrokeWidth(4f),
+                        PropertyFactory.circleStrokeColor(Color.WHITE)
+                );
+                clusterLayer.setFilter(Expression.has("point_count"));
+                mapboxStyle.addLayer(clusterLayer);
+
 
                 mapboxMap.addOnMapClickListener(point -> {
                     PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
@@ -260,7 +315,6 @@ public class MapActivity extends AppCompatActivity {
                     if (featureList.size() > 0) {
                         for (com.mapbox.geojson.Feature feature : featureList) {
                             if (feature.getNumberProperty("cluster_id") != null) {
-                                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
                                 try {
                                     LatLng pos = new LatLng(
                                             new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
@@ -275,7 +329,10 @@ public class MapActivity extends AppCompatActivity {
                                             CameraUpdateFactory.newCameraPosition(position),
                                             250
                                     );
-                                } catch (JSONException e) {}
+                                } catch (JSONException e) {
+                                    continue;
+                                }
+                                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
                             }
                         }
                         return true;
