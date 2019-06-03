@@ -11,4 +11,8 @@
         <item name="colorAccent">@color/secondaryColor</item>
     </style>
 
+    <style name="AppTheme.Launcher">
+        <item name="android:windowBackground">@drawable/splash_screen</item>
+    </style>
+
 </resources>

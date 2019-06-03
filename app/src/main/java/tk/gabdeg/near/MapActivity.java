@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -14,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -34,6 +36,9 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.Style;
+import com.mapbox.mapboxsdk.plugins.annotation.Circle;
+import com.mapbox.mapboxsdk.plugins.annotation.CircleManager;
+import com.mapbox.mapboxsdk.plugins.annotation.CircleOptions;
 import com.mapbox.mapboxsdk.plugins.annotation.Symbol;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolManager;
 import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
@@ -42,6 +47,7 @@ import com.mapbox.mapboxsdk.style.layers.CircleLayer;
 import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
+import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.mapboxsdk.utils.BitmapUtils;
@@ -49,6 +55,7 @@ import com.mapbox.mapboxsdk.utils.BitmapUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -60,10 +67,18 @@ public class MapActivity extends AppCompatActivity {
     private MapView mapView;
     private MapboxMap mapboxMap;
     private Location location;
-    private SymbolManager userSymManager;
+    private CircleManager userSymManager;
     private Style mapboxStyle;
     private ProgressBar spinner;
-    private Symbol locationMarker;
+    private Circle locationMarker;
+    private boolean finishedLoading = false;
+
+    void checkIfLoaded() {
+        if (finishedLoading) {
+            mapView.setVisibility(View.VISIBLE);
+            spinner.setVisibility(View.GONE);
+        }
+    }
 
     int mixTwoColors(int color1, int color2, float amount) {
         final byte ALPHA_CHANNEL = 24;
@@ -105,16 +120,18 @@ public class MapActivity extends AppCompatActivity {
 
     void updateUserPositionMarker(LatLng loc) {
         if (userSymManager != null) {
-            SymbolOptions userIcon = new SymbolOptions()
-                    .withIconColor(String.format("#%06X", (0xFFFFFF & Color.WHITE)))
-                    .withIconImage(USER_ICON)
-                    .withTextColor("user!")
-                    .withLatLng(loc);
-            Symbol newLocationMarker = userSymManager.create(userIcon);
             if (locationMarker != null) {
-                userSymManager.delete(locationMarker);
+                locationMarker.setLatLng(loc);
+                userSymManager.update(locationMarker);
+            } else {
+                CircleOptions userIcon = new CircleOptions()
+                        .withCircleColor("#1E88E5")
+                        .withCircleRadius(8f)
+                        .withCircleStrokeColor("#343332")
+                        .withCircleStrokeWidth(2f)
+                        .withLatLng(loc);
+                locationMarker = userSymManager.create(userIcon);
             }
-            locationMarker = newLocationMarker;
         }
     }
 
@@ -127,13 +144,8 @@ public class MapActivity extends AppCompatActivity {
             mapboxMap.moveCamera(
                     CameraUpdateFactory.newCameraPosition(position)
             );
-
             updateUserPositionMarker(getLatLng(location));
-
-            Log.d("points", "hiding spinner");
-
-            mapView.setVisibility(View.VISIBLE);
-            spinner.setVisibility(View.GONE);
+            checkIfLoaded();
         }
     }
 
@@ -158,7 +170,7 @@ public class MapActivity extends AppCompatActivity {
             locationClient.getLastLocation().addOnSuccessListener(this, loc -> {
                 if (location == null) {
                     location = loc;
-                    onUserFirstLocated();
+                    new GetPostsTask().execute(getLatLng(location));
                 }
                 location = loc;
             });
@@ -191,8 +203,163 @@ public class MapActivity extends AppCompatActivity {
         }
     }
 
+    void loadMap(FeatureCollection posts) {
+        if (mapView != null) {
+            mapView.getMapAsync(map -> {
+
+                mapboxMap = map;
+                mapboxMap.getUiSettings().setRotateGesturesEnabled(false);
+                mapboxMap.getUiSettings().setTiltGesturesEnabled(false);
+
+                mapboxMap.setStyle(Style.DARK, style -> {
+                    mapboxStyle = style;
+
+                    mapboxStyle.addImage(USER_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.find_location))), true);
+                    mapboxStyle.addImage(POST_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.post_marker))), true);
+
+                    String jsonStr = "";
+                    try {
+                        Log.d("points", "adding source");
+                        jsonStr = posts.toJSON().toString();
+                    } catch (JSONException e) {
+                        Log.d("points", "bad json!");
+                    }
+                    GeoJsonSource source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions()
+                            .withCluster(true)
+                            .withClusterMaxZoom(26)
+                            .withMaxZoom(26)
+                            //.withMaxZoom(14)
+                            .withClusterRadius(64));
+                    mapboxStyle.addSource(
+                            source
+                    );
+
+                    float defaultRadius = 10f;
+                    int defaultColor = getResources().getColor(R.color.secondaryColor);
+                    int clusteredColor = getResources().getColor(R.color.clusteredColor);
+                    
+                    Log.d("points", "adding base layer");
+                    mapboxStyle.addLayer(new CircleLayer("points", "points").withProperties(
+                            PropertyFactory.circleColor(defaultColor),
+                            PropertyFactory.circleRadius(defaultRadius)
+                            ).withFilter(
+                            Expression.not(Expression.has("point_count"))
+                            )
+                    );
+                    CircleLayer clusterLayer = new CircleLayer("points-clustered", "points").withProperties(
+                            PropertyFactory.circleColor(
+                                    Expression.step(
+                                            Expression.get("point_count"),
+                                            Expression.literal(mixColorsHex(defaultColor, clusteredColor, 0.75)),
+                                            Expression.stop(10, mixColorsHex(defaultColor, clusteredColor, 0.5)),
+                                            Expression.stop(100, mixColorsHex(defaultColor, clusteredColor, 0.25)),
+                                            Expression.stop(1000, mixColorsHex(defaultColor, clusteredColor, 0))
+                                    )
+                            ),
+                            PropertyFactory.circleRadius(
+                                    Expression.product(
+                                            Expression.sum(
+                                                    Expression.literal(1.5),
+                                                    Expression.division(
+                                                            Expression.log10(
+                                                                    Expression.get("point_count")
+                                                            ),
+                                                            Expression.literal(2)
+                                                    )
+                                            ),
+                                            Expression.literal(defaultRadius)
+                                    )
+                            ),
+                            PropertyFactory.circleStrokeWidth(4f),
+                            PropertyFactory.circleStrokeColor(Color.WHITE)
+                    );
+                    clusterLayer.setFilter(Expression.has("point_count"));
+                    mapboxStyle.addLayer(clusterLayer);
+
+                    SymbolLayer textLayer = new SymbolLayer("point_labels", "points").withProperties(
+                            PropertyFactory.textAllowOverlap(true),
+                            PropertyFactory.textColor(Color.WHITE),
+                            PropertyFactory.textField(Expression.get("point_count_abbreviated")),
+                            PropertyFactory.textIgnorePlacement(false),
+                            PropertyFactory.textSize(14f)
+                    );
+
+                    userSymManager = new CircleManager(mapView, mapboxMap, mapboxStyle);
+
+                    mapboxStyle.setTransition(new TransitionOptions(0, 0, false));
+
+                    userSymManager.addClickListener(symbol -> {
+                        Log.d("symbolo", symbol.toString());
+                    });
+
+                    mapboxStyle.addLayer(
+                            textLayer
+                    );
+
+                    mapboxMap.addOnMapClickListener(point -> {
+                        PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
+                        List<com.mapbox.geojson.Feature> featureList = mapboxMap.queryRenderedFeatures(pointf, "points-clustered");
+                        if (featureList.size() > 0) {
+                            for (com.mapbox.geojson.Feature feature : featureList) {
+                                Log.d("points", feature.toJson());
+                                if (source.getClusterExpansionZoom(feature) <= mapboxMap.getMaxZoomLevel()) {
+                                    try {
+                                        LatLng pos = new LatLng(
+                                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
+                                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0)
+                                        );
+                                        Log.d("points", pos.toString());
+                                        CameraPosition position = new CameraPosition.Builder()
+                                                .target(pos)
+                                                .zoom(source.getClusterExpansionZoom(feature) + 0.1)
+                                                .build();
+                                        mapboxMap.animateCamera(
+                                                CameraUpdateFactory.newCameraPosition(position),
+                                                250
+                                        );
+
+                                    } catch (JSONException e) {
+                                        continue;
+                                    }
+                                } else {
+                                    Log.d("points", "not zooming!");
+                                    Log.d("points", "contains number of elements = to " + source.getClusterLeaves(feature, feature.getNumberProperty("point_count").longValue(), 0).features().size());
+                                }
+                                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
+                            }
+                            return true;
+                        }
+                        featureList = mapboxMap.queryRenderedFeatures(pointf, "points");
+                        if (featureList.size() > 0) {
+                            for (com.mapbox.geojson.Feature feature : featureList) {
+                                Log.d("points", feature.toJson());
+                            }
+                            return true;
+                        }
+                        return false;
+                    });
+
+                });
+            });
+        }
+    }
+
+    private class GetPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
+        protected FeatureCollection doInBackground(LatLng... positions) {
+            return new Backend().getPosts(positions[0]);
+        }
+
+        @Override
+        protected void onPostExecute(FeatureCollection featureCollection) {
+            loadMap(featureCollection);
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        setTheme(R.style.AppTheme);
+
         super.onCreate(savedInstanceState);
 
         Log.d("navbar", Integer.toString(getNavBarHeight()));
@@ -202,154 +369,22 @@ public class MapActivity extends AppCompatActivity {
         mapView = findViewById(R.id.mapView);
         FloatingActionButton postFab = findViewById(R.id.postFab);
         spinner = findViewById(R.id.spinner);
-        postFab.setOnClickListener(v -> Log.d("post", "clicked"));
+        postFab.setOnClickListener(v -> {
+            Log.d("post", "posted!");
+        });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
         locateFab.setOnClickListener(v -> jumpToUserLocation());
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) postFab.getLayoutParams();
         params.bottomMargin += getNavBarHeight();
 
         mapView.onCreate(savedInstanceState);
+        mapView.addOnDidFinishRenderingMapListener(fully -> {
+            Log.d("style", "finished rendering");
+            finishedLoading = true;
+            onUserFirstLocated();
+        });
 
         checkLocationPermission();
-
-        mapView.getMapAsync(map -> {
-            Log.d("map", "READY");
-            mapboxMap = map;
-            mapboxMap.getUiSettings().setRotateGesturesEnabled(false);
-            mapboxMap.getUiSettings().setTiltGesturesEnabled(false);
-            mapboxMap.setStyle(Style.DARK, style -> {
-                mapboxStyle = style;
-                Log.d("icons", "adding them");
-
-                mapboxStyle.addImage(USER_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.find_location))), true);
-                mapboxStyle.addImage(POST_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.post_marker))), true);
-
-                Log.d("points", "creating points");
-
-                FeatureCollection collection = new FeatureCollection();
-                int id = 0;
-                Random rand = new Random();
-                for (double lat = 0; lat < 90; lat += 0.5) {
-                    for (double lon = 0; lon > -180; lon -= 0.5) {
-                        if (rand.nextBoolean()) {
-                            Point point = new Point(lat, lon);
-                            Feature feature = new Feature(point);
-                            feature.setIdentifier(Integer.toString(++id));
-                            collection.addFeature(feature);
-                        }
-                    }
-                }
-                for (double i = location.getLatitude() - 0.00125; i < location.getLatitude() + 0.00125; i += 0.000125) {
-                    for (double j = location.getLongitude() - 0.00125; j < location.getLongitude() + 0.00125; j += 0.000125) {
-                        Feature feature = new Feature(new Point(i, j));
-                        feature.setIdentifier(Integer.toString(++id));
-                        collection.addFeature(feature);
-                    }
-                }
-
-                String jsonStr = "";
-                try {
-                    Log.d("points", collection.toJSON().toString());
-                    Log.d("points", "adding source");
-                    jsonStr = collection.toJSON().toString();
-                } catch (JSONException e) {
-                    Log.d("points", "bad json!");
-                }
-                GeoJsonSource source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions()
-                        .withCluster(true)
-                        //.withMaxZoom(14)
-                        .withClusterRadius(64));
-                mapboxStyle.addSource(
-                        source
-                );
-
-                Log.d("points", id + " points created");
-
-                float defaultRadius = 10f;
-                int defaultColor = getResources().getColor(R.color.secondaryColor);
-                int clusteredColor = getResources().getColor(R.color.clusteredColor);
-
-                //Log.d("points", String.format("#%06X", (0xFFFFFF & defaultColor)));
-                //Log.d("points", String.format("#%06X", (0xFFFFFF & scaleColorYellow(defaultColor, 0.5))));
-
-                Log.d("points", "adding base layer");
-                mapboxStyle.addLayer(new CircleLayer("points", "points").withProperties(
-                        PropertyFactory.circleColor(defaultColor),
-                        PropertyFactory.circleRadius(defaultRadius)
-                ));
-                CircleLayer clusterLayer = new CircleLayer("points-clustered", "points").withProperties(
-                        PropertyFactory.circleColor(
-                                Expression.step(
-                                        Expression.get("point_count"),
-                                        Expression.literal(mixColorsHex(defaultColor, clusteredColor, 0.75)),
-                                        Expression.stop(10, mixColorsHex(defaultColor, clusteredColor, 0.5)),
-                                        Expression.stop(100, mixColorsHex(defaultColor, clusteredColor, 0.25)),
-                                        Expression.stop(1000, mixColorsHex(defaultColor, clusteredColor, 0))
-                                )
-                        ),
-                        PropertyFactory.circleRadius(
-                                Expression.product(
-                                        Expression.sum(
-                                                Expression.literal(1.5),
-                                                Expression.division(
-                                                        Expression.log10(
-                                                                Expression.get("point_count")
-                                                        ),
-                                                        Expression.literal(2)
-                                                )
-                                        ),
-                                        Expression.literal(defaultRadius)
-                                )
-                        ),
-                        PropertyFactory.circleStrokeWidth(4f),
-                        PropertyFactory.circleStrokeColor(Color.WHITE)
-                );
-                clusterLayer.setFilter(Expression.has("point_count"));
-                mapboxStyle.addLayer(clusterLayer);
-
-
-                mapboxMap.addOnMapClickListener(point -> {
-                    PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
-                    RectF rectF = new RectF(pointf.x - 10, pointf.y - 10, pointf.x + 10, pointf.y + 10);
-                    List<com.mapbox.geojson.Feature> featureList = mapboxMap.queryRenderedFeatures(rectF, "points");
-                    if (featureList.size() > 0) {
-                        for (com.mapbox.geojson.Feature feature : featureList) {
-                            if (feature.getNumberProperty("cluster_id") != null) {
-                                try {
-                                    LatLng pos = new LatLng(
-                                            new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
-                                            new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0)
-                                    );
-                                    Log.d("points", pos.toString());
-                                    CameraPosition position = new CameraPosition.Builder()
-                                            .target(pos)
-                                            .zoom(source.getClusterExpansionZoom(feature) + 0.1)
-                                            .build();
-                                    mapboxMap.animateCamera(
-                                            CameraUpdateFactory.newCameraPosition(position),
-                                            250
-                                    );
-                                } catch (JSONException e) {
-                                    continue;
-                                }
-                                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
-                            }
-                        }
-                        return true;
-                    }
-                    return false;
-                });
-
-
-                userSymManager = new SymbolManager(mapView, mapboxMap, mapboxStyle);
-                userSymManager.setIconAllowOverlap(true);
-
-                userSymManager.addClickListener(symbol -> {
-                    Log.d("symbolo", symbol.toString());
-                });
-                onUserFirstLocated();
-            });
-        });
     }
 
     @Override

@@ -29,7 +29,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:padding="16dp"
         android:src="@drawable/new_post"
         android:layout_gravity="bottom|end"
         app:rippleColor="@color/primaryColor"
@@ -38,10 +37,9 @@
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/locateFab"
-        app:backgroundTint="@android:color/white"
+        app:backgroundTint="#1E88E5"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="16dp"
         android:src="@drawable/find_location"
         android:layout_gravity="top|end"
         app:rippleColor="@color/primaryColor"
