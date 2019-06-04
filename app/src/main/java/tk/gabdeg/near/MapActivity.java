@@ -4,31 +4,26 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.PointF;
-import android.graphics.RectF;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.constraintlayout.widget.Guideline;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
-import com.cocoahero.android.geojson.Point;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -48,12 +43,8 @@ import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.mapboxsdk.plugins.annotation.Circle;
 import com.mapbox.mapboxsdk.plugins.annotation.CircleManager;
 import com.mapbox.mapboxsdk.plugins.annotation.CircleOptions;
-import com.mapbox.mapboxsdk.plugins.annotation.Symbol;
-import com.mapbox.mapboxsdk.plugins.annotation.SymbolManager;
-import com.mapbox.mapboxsdk.plugins.annotation.SymbolOptions;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.CircleLayer;
-import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
@@ -64,11 +55,9 @@ import com.mapbox.mapboxsdk.utils.BitmapUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 
 public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapClickListener {
 
@@ -83,6 +72,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     private Circle locationMarker;
     private boolean finishedLoading = false;
     private GeoJsonSource source;
+    private Point dimensions;
 
     void checkIfLoaded() {
         if (finishedLoading) {
@@ -119,6 +109,15 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     int getNavBarHeight() {
         Resources resources = getResources();
         int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            return resources.getDimensionPixelSize(resourceId);
+        }
+        return 0;
+    }
+
+    int getStatusBarHeight() {
+        Resources resources = getResources();
+        int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
             return resources.getDimensionPixelSize(resourceId);
         }
@@ -229,17 +228,43 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         findViewById(R.id.locateFab).setVisibility(View.GONE);
     }
 
-    void unprepareInfoLayout() {
+    void stowInfoLayout() {
+        Guideline guideline = findViewById(R.id.infoFrameExtent);
+        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
+        dimensions = new Point();
+        getWindowManager().getDefaultDisplay().getSize(dimensions);
+        params.guideBegin = dimensions.y / 2;
+        Log.d("mapview height", "" + dimensions.y);
+        guideline.setLayoutParams(params);
+
         findViewById(R.id.infoFrame).setVisibility(View.GONE);
         findViewById(R.id.postFab).setVisibility(View.VISIBLE);
         findViewById(R.id.locateFab).setVisibility(View.VISIBLE);
+    }
+
+    boolean toggleInfoFragmentSize() { //return true if big
+        Guideline guideline = findViewById(R.id.infoFrameExtent);
+        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
+        if (params.guideBegin == getStatusBarHeight()) {
+            dimensions = new Point();
+            getWindowManager().getDefaultDisplay().getSize(dimensions);
+            params.guideBegin = dimensions.y / 2;
+            Log.d("frag size", "shrinking");
+            guideline.setLayoutParams(params);
+            return false;
+        } else {
+            params.guideBegin = getStatusBarHeight();
+            Log.d("frag size", "growing");
+            guideline.setLayoutParams(params);
+            return true;
+        }
     }
 
     void removeInfoFragment() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
         fragmentTransaction.commit();
-        unprepareInfoLayout();
+        stowInfoLayout();
     }
 
     void clickPost(Post post) {
@@ -433,6 +458,13 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         params.guideEnd = getNavBarHeight();
         guideline.setLayoutParams(params);
 
+        guideline = findViewById(R.id.infoFrameExtent);
+        params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
+        dimensions = new Point();
+        getWindowManager().getDefaultDisplay().getSize(dimensions);
+        params.guideBegin = dimensions.y / 2;
+        Log.d("mapview height", "" + dimensions.y);
+        guideline.setLayoutParams(params);
 
 
         mapView.onCreate(savedInstanceState);

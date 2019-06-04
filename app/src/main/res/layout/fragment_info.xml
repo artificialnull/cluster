@@ -47,6 +47,20 @@
             android:id="@+id/close_button"
             />
 
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@+id/close_button"
+            android:layout_centerVertical="true"
+            style="?android:attr/borderlessButtonStyle"
+            android:src="@drawable/chevron_up"
+            android:tint="@color/secondaryColor"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:contentDescription="@string/close_text"
+            android:id="@+id/toggle_button"
+            />
+
     </RelativeLayout>
 
     <androidx.core.widget.NestedScrollView
