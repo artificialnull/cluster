@@ -3,6 +3,7 @@ package tk.gabdeg.near;
 import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.cocoahero.android.geojson.Point;
+import com.google.gson.Gson;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
 import org.apache.commons.io.IOUtils;
@@ -70,8 +71,23 @@ public class Backend {
             return collection;
 
         } catch (IOException e) {
-        } catch (JSONException e) { }
+        } catch (JSONException e) {
+        }
         return null;
     }
 
+    public Post getPost(int postID) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(server + "/post/" + postID).openConnection();
+            conn.setChunkedStreamingMode(0);
+
+            Post ret = new Gson().fromJson(streamToString(conn.getInputStream()), Post.class);
+            conn.disconnect();
+
+            return ret;
+
+        } catch (IOException e) {
+        }
+        return null;
+    }
 }

@@ -179,11 +179,13 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         } else {
             FusedLocationProviderClient locationClient = LocationServices.getFusedLocationProviderClient(this);
             locationClient.getLastLocation().addOnSuccessListener(this, loc -> {
-                if (location == null) {
+                if (loc != null) {
+                    if (location == null) {
+                        location = loc;
+                        new GetPostsTask().execute(getLatLng(location));
+                    }
                     location = loc;
-                    new GetPostsTask().execute(getLatLng(location));
                 }
-                location = loc;
             });
             LocationRequest locationRequest = LocationRequest.create();
             locationRequest.setInterval(5000);
@@ -195,6 +197,10 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
                 public void onLocationResult(LocationResult result) {
                     if (result == null) {
                         return;
+                    }
+                    if (location == null) {
+                        location = result.getLastLocation();
+                        new GetPostsTask().execute(getLatLng(location));
                     }
                     for (Location loc : result.getLocations()) {
                         updateUserPositionMarker(getLatLng(loc));
