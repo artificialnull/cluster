@@ -5,6 +5,7 @@ import com.cocoahero.android.geojson.FeatureCollection;
 import com.cocoahero.android.geojson.Point;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
+import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,12 +24,9 @@ public class Backend {
     static String server = "http://192.168.1.172:5000";
 
     String streamToString(InputStream is) throws IOException {
-        BufferedReader ir = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-        for (String line; (line = ir.readLine()) != null; ) {
-            sb.append(line).append('\n');
-        }
-        return sb.toString();
+        String out = IOUtils.toString(is, StandardCharsets.UTF_8);
+        is.close();
+        return out;
     }
 
     void writeJSON(JSONObject json, OutputStream out) throws IOException {
@@ -38,10 +36,16 @@ public class Backend {
         writer.close();
     }
 
+    public boolean submitPost(Post post) {
+        return false;
+
+    }
+
     public FeatureCollection getPosts(LatLng position) {
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(server + "/posts").openConnection();
             conn.setRequestMethod("POST");
+            conn.setChunkedStreamingMode(0);
 
             conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
             conn.setRequestProperty("Accept", "application/json");
@@ -62,14 +66,11 @@ public class Backend {
                 collection.addFeature(feature);
             }
 
+            conn.disconnect();
             return collection;
 
-
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        } catch (JSONException e) { }
         return null;
     }
 

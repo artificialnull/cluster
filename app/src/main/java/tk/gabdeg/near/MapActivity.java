@@ -9,6 +9,7 @@ import android.graphics.RectF;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,8 +18,13 @@ import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
+import androidx.constraintlayout.widget.Guideline;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
@@ -29,10 +35,13 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.gson.Gson;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.Style;
@@ -56,11 +65,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-public class MapActivity extends AppCompatActivity {
+public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapClickListener {
 
     static String USER_ICON = "user_icon_string";
     static String POST_ICON = "post_icon_string";
@@ -72,6 +82,7 @@ public class MapActivity extends AppCompatActivity {
     private ProgressBar spinner;
     private Circle locationMarker;
     private boolean finishedLoading = false;
+    private GeoJsonSource source;
 
     void checkIfLoaded() {
         if (finishedLoading) {
@@ -126,7 +137,7 @@ public class MapActivity extends AppCompatActivity {
             } else {
                 CircleOptions userIcon = new CircleOptions()
                         .withCircleColor("#1E88E5")
-                        .withCircleRadius(8f)
+                        .withCircleRadius(6f)
                         .withCircleStrokeColor("#343332")
                         .withCircleStrokeWidth(2f)
                         .withLatLng(loc);
@@ -182,7 +193,6 @@ public class MapActivity extends AppCompatActivity {
             LocationCallback locationCallback = new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult result) {
-                    Log.d("location", "updated");
                     if (result == null) {
                         return;
                     }
@@ -203,6 +213,101 @@ public class MapActivity extends AppCompatActivity {
         }
     }
 
+    void clickCluster(List<Post> posts) {
+        Log.d("cluster clicked", posts.size() + " children");
+    }
+
+    void prepareInfoLayout() {
+        findViewById(R.id.infoFrame).setVisibility(View.VISIBLE);
+        findViewById(R.id.postFab).setVisibility(View.GONE);
+        findViewById(R.id.locateFab).setVisibility(View.GONE);
+    }
+
+    void unprepareInfoLayout() {
+        findViewById(R.id.infoFrame).setVisibility(View.GONE);
+        findViewById(R.id.postFab).setVisibility(View.VISIBLE);
+        findViewById(R.id.locateFab).setVisibility(View.VISIBLE);
+    }
+
+    void removeInfoFragment() {
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
+        fragmentTransaction.commit();
+        unprepareInfoLayout();
+    }
+
+    void clickPost(Post post) {
+        Log.d("post clicked", "id=" + post.id);
+        if (mapboxMap != null) {
+            LatLngBounds currentBounds = mapboxMap.getProjection().getVisibleRegion().latLngBounds;
+
+            double newLat = post.latitude - currentBounds.getLatitudeSpan() / 4;
+            double newLon = post.longitude;
+
+            CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(newLat, newLon));
+            mapboxMap.easeCamera(moveToPost, 500);
+
+            prepareInfoLayout();
+
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+            Bundle bundle = new Bundle();
+            bundle.putString(InfoFragment.POST_KEY, new Gson().toJson(post).toString());
+            InfoFragment infoFragment = new InfoFragment();
+            infoFragment.setArguments(bundle);
+            fragmentTransaction.replace(R.id.infoFrame, infoFragment);
+            fragmentTransaction.commit();
+        }
+    }
+
+    public boolean onMapClick(@NonNull LatLng point) {
+        PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
+        List<com.mapbox.geojson.Feature> featureList = mapboxMap.queryRenderedFeatures(pointf, "points-clustered");
+        if (featureList.size() > 0) {
+            for (com.mapbox.geojson.Feature feature : featureList) {
+                Log.d("points", feature.toJson());
+                if (source.getClusterExpansionZoom(feature) <= mapboxMap.getMaxZoomLevel()) {
+                    try {
+                        assert feature.geometry() != null;
+                        LatLng pos = new LatLng(
+                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
+                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0)
+                        );
+                        Log.d("points", pos.toString());
+                        CameraPosition position = new CameraPosition.Builder()
+                                .target(pos)
+                                .zoom(source.getClusterExpansionZoom(feature) + 0.1)
+                                .build();
+                        mapboxMap.animateCamera(
+                                CameraUpdateFactory.newCameraPosition(position),
+                                250
+                        );
+                    } catch (JSONException e) {
+                        continue;
+                    }
+                } else {
+                    List<Post> children = new ArrayList<>();
+                    for (com.mapbox.geojson.Feature child : source.getClusterLeaves(feature, feature.getNumberProperty("point_count").longValue(), 0).features()) {
+                        children.add(new Gson().fromJson(child.properties().toString(), Post.class));
+                    }
+                    MapActivity.this.clickCluster(children);
+                }
+                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
+            }
+            return true;
+        }
+        featureList = mapboxMap.queryRenderedFeatures(pointf, "points");
+        if (featureList.size() > 0) {
+            for (com.mapbox.geojson.Feature feature : featureList) {
+                Log.d("points", new Gson().fromJson(feature.properties().toString(), Post.class).toString());
+                MapActivity.this.clickPost(new Gson().fromJson(feature.properties().toString(), Post.class));
+            }
+            return true;
+        }
+        return false;
+    }
+
     void loadMap(FeatureCollection posts) {
         if (mapView != null) {
             mapView.getMapAsync(map -> {
@@ -217,18 +322,19 @@ public class MapActivity extends AppCompatActivity {
                     mapboxStyle.addImage(USER_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.find_location))), true);
                     mapboxStyle.addImage(POST_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.post_marker))), true);
 
-                    String jsonStr = "";
-                    try {
-                        Log.d("points", "adding source");
-                        jsonStr = posts.toJSON().toString();
-                    } catch (JSONException e) {
-                        Log.d("points", "bad json!");
+                    String jsonStr = "{\"type\": \"FeatureCollection\", \"features\": []}";
+                    if (posts != null) {
+                        try {
+                            Log.d("points", "adding source");
+                            jsonStr = posts.toJSON().toString();
+                        } catch (JSONException e) {
+                            Log.d("points", "bad json!");
+                        }
                     }
-                    GeoJsonSource source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions()
+                    source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions()
                             .withCluster(true)
                             .withClusterMaxZoom(26)
                             .withMaxZoom(26)
-                            //.withMaxZoom(14)
                             .withClusterRadius(64));
                     mapboxStyle.addSource(
                             source
@@ -237,7 +343,7 @@ public class MapActivity extends AppCompatActivity {
                     float defaultRadius = 10f;
                     int defaultColor = getResources().getColor(R.color.secondaryColor);
                     int clusteredColor = getResources().getColor(R.color.clusteredColor);
-                    
+
                     Log.d("points", "adding base layer");
                     mapboxStyle.addLayer(new CircleLayer("points", "points").withProperties(
                             PropertyFactory.circleColor(defaultColor),
@@ -256,26 +362,12 @@ public class MapActivity extends AppCompatActivity {
                                             Expression.stop(1000, mixColorsHex(defaultColor, clusteredColor, 0))
                                     )
                             ),
-                            PropertyFactory.circleRadius(
-                                    Expression.product(
-                                            Expression.sum(
-                                                    Expression.literal(1.5),
-                                                    Expression.division(
-                                                            Expression.log10(
-                                                                    Expression.get("point_count")
-                                                            ),
-                                                            Expression.literal(2)
-                                                    )
-                                            ),
-                                            Expression.literal(defaultRadius)
-                                    )
-                            ),
+                            PropertyFactory.circleRadius(Expression.product(Expression.sum(Expression.literal(1.5), Expression.division(Expression.log10(Expression.get("point_count")), Expression.literal(2))), Expression.literal(defaultRadius))),
                             PropertyFactory.circleStrokeWidth(4f),
                             PropertyFactory.circleStrokeColor(Color.WHITE)
                     );
                     clusterLayer.setFilter(Expression.has("point_count"));
                     mapboxStyle.addLayer(clusterLayer);
-
                     SymbolLayer textLayer = new SymbolLayer("point_labels", "points").withProperties(
                             PropertyFactory.textAllowOverlap(true),
                             PropertyFactory.textColor(Color.WHITE),
@@ -283,75 +375,30 @@ public class MapActivity extends AppCompatActivity {
                             PropertyFactory.textIgnorePlacement(false),
                             PropertyFactory.textSize(14f)
                     );
-
                     userSymManager = new CircleManager(mapView, mapboxMap, mapboxStyle);
-
                     mapboxStyle.setTransition(new TransitionOptions(0, 0, false));
-
                     userSymManager.addClickListener(symbol -> {
                         Log.d("symbolo", symbol.toString());
                     });
-
                     mapboxStyle.addLayer(
                             textLayer
                     );
-
-                    mapboxMap.addOnMapClickListener(point -> {
-                        PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
-                        List<com.mapbox.geojson.Feature> featureList = mapboxMap.queryRenderedFeatures(pointf, "points-clustered");
-                        if (featureList.size() > 0) {
-                            for (com.mapbox.geojson.Feature feature : featureList) {
-                                Log.d("points", feature.toJson());
-                                if (source.getClusterExpansionZoom(feature) <= mapboxMap.getMaxZoomLevel()) {
-                                    try {
-                                        LatLng pos = new LatLng(
-                                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
-                                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0)
-                                        );
-                                        Log.d("points", pos.toString());
-                                        CameraPosition position = new CameraPosition.Builder()
-                                                .target(pos)
-                                                .zoom(source.getClusterExpansionZoom(feature) + 0.1)
-                                                .build();
-                                        mapboxMap.animateCamera(
-                                                CameraUpdateFactory.newCameraPosition(position),
-                                                250
-                                        );
-
-                                    } catch (JSONException e) {
-                                        continue;
-                                    }
-                                } else {
-                                    Log.d("points", "not zooming!");
-                                    Log.d("points", "contains number of elements = to " + source.getClusterLeaves(feature, feature.getNumberProperty("point_count").longValue(), 0).features().size());
-                                }
-                                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
-                            }
-                            return true;
-                        }
-                        featureList = mapboxMap.queryRenderedFeatures(pointf, "points");
-                        if (featureList.size() > 0) {
-                            for (com.mapbox.geojson.Feature feature : featureList) {
-                                Log.d("points", feature.toJson());
-                            }
-                            return true;
-                        }
-                        return false;
-                    });
-
+                    mapboxMap.addOnMapClickListener(this);
                 });
             });
         }
     }
 
-    private class GetPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
-        protected FeatureCollection doInBackground(LatLng... positions) {
-            return new Backend().getPosts(positions[0]);
-        }
-
-        @Override
-        protected void onPostExecute(FeatureCollection featureCollection) {
-            loadMap(featureCollection);
+    void refreshMap(FeatureCollection posts) {
+        if (source != null && posts != null) {
+            String jsonStr = "";
+            try {
+                Log.d("points", "adding source");
+                jsonStr = posts.toJSON().toString();
+            } catch (JSONException e) {
+                Log.d("points", "bad json!");
+            }
+            source.setGeoJson(jsonStr);
         }
     }
 
@@ -374,8 +421,13 @@ public class MapActivity extends AppCompatActivity {
         });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
         locateFab.setOnClickListener(v -> jumpToUserLocation());
-        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) postFab.getLayoutParams();
-        params.bottomMargin += getNavBarHeight();
+
+        Guideline guideline = findViewById(R.id.navBarTop);
+        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
+        params.guideEnd = getNavBarHeight();
+        guideline.setLayoutParams(params);
+
+
 
         mapView.onCreate(savedInstanceState);
         mapView.addOnDidFinishRenderingMapListener(fully -> {
@@ -429,4 +481,34 @@ public class MapActivity extends AppCompatActivity {
         super.onSaveInstanceState(outState);
         mapView.onSaveInstanceState(outState);
     }
+
+    private class GetPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
+        protected FeatureCollection doInBackground(LatLng... positions) {
+            return new Backend().getPosts(positions[0]);
+        }
+
+        @Override
+        protected void onPostExecute(FeatureCollection featureCollection) {
+            if (featureCollection != null) {
+                loadMap(featureCollection);
+                new RefreshPostsTask().execute(getLatLng(location));
+            } else {
+                new GetPostsTask().execute(getLatLng(location));
+            }
+        }
+    }
+
+    private class RefreshPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
+        protected FeatureCollection doInBackground(LatLng... positions) {
+            Log.d("refresh", "refreshing!");
+            return new Backend().getPosts(positions[0]);
+        }
+
+        @Override
+        protected void onPostExecute(FeatureCollection featureCollection) {
+            refreshMap(featureCollection);
+            new Handler().postDelayed(() -> new RefreshPostsTask().execute(getLatLng(location)), (featureCollection != null ? 30 : 5) * 1000);
+        }
+    }
+
 }
