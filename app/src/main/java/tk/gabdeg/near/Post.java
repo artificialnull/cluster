@@ -4,6 +4,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 
 public class Post {
     int id;
+    int userID;
     double latitude;
     double longitude;
     LatLng location() {
@@ -18,11 +19,14 @@ public class Post {
     public String toString() {
         return "Post{" +
                 "id=" + id +
-                ", location=" + location().toString() +
+                ", userID=" + userID +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
                 ", text='" + text + '\'' +
                 ", image='" + image + '\'' +
                 ", user='" + user + '\'' +
                 ", time=" + time +
                 '}';
     }
+    
 }

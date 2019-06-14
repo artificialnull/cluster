@@ -1,6 +1,7 @@
 package tk.gabdeg.near;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -449,6 +450,8 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         spinner = findViewById(R.id.spinner);
         postFab.setOnClickListener(v -> {
             Log.d("post", "posted!");
+            Intent intent = new Intent(this, SubmitActivity.class);
+            startActivity(intent);
         });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
         locateFab.setOnClickListener(v -> jumpToUserLocation());

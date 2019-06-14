@@ -2,6 +2,7 @@ package tk.gabdeg.near;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -20,6 +21,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.google.gson.Gson;
+import com.mapbox.mapboxsdk.location.LocationComponent;
 
 public class InfoFragment extends Fragment {
 
@@ -66,7 +68,10 @@ public class InfoFragment extends Fragment {
         layout = inflater.inflate(R.layout.fragment_info, container, false);
 
         layout.findViewById(R.id.close_button).setOnClickListener(
-                v -> ((MapActivity) getActivity()).removeInfoFragment()
+                v -> {
+                    layout = null;
+                    ((MapActivity) getActivity()).removeInfoFragment();
+                }
         );
 
         layout.findViewById(R.id.toggle_button).setOnClickListener(
@@ -105,6 +110,10 @@ public class InfoFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Post post) {
+            Log.d("post", "got");
+            if (layout == null) {
+                return;
+            }
             if (post.user != null) {
                 formatPost(post);
                 new Handler().postDelayed(
