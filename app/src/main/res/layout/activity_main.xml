@@ -46,19 +46,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/navBarTop"
         app:rippleColor="@color/primaryColor"
-        app:useCompatPadding="true"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
         />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/locateFab"
-        app:backgroundTint="#1E88E5"
+        app:backgroundTint="@color/locationColor"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:src="@drawable/find_location"
         app:layout_constraintBottom_toTopOf="@+id/postFab"
-        app:layout_constraintEnd_toEndOf="@+id/postFab"
+        app:layout_constraintEnd_toEndOf="parent"
         app:rippleColor="@color/primaryColor"
-        app:useCompatPadding="true"
+        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="16dp"
         />
 
     <FrameLayout

@@ -9,4 +9,5 @@
     <color name="primaryTextColor">#ffffff</color>
     <color name="secondaryTextColor">#000000</color>
     <color name="clusteredColor">#E53935</color>
+    <color name="locationColor">#1E88E5</color>
 </resources>

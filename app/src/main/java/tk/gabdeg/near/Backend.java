@@ -4,6 +4,7 @@ import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.cocoahero.android.geojson.Point;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
 import org.apache.commons.io.IOUtils;
@@ -23,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 public class Backend {
     static String server = "http://192.168.1.172:5000";
+    static String phone = "2819498189";
 
     String streamToString(InputStream is) throws IOException {
         String out = IOUtils.toString(is, StandardCharsets.UTF_8);
@@ -37,26 +39,48 @@ public class Backend {
         writer.close();
     }
 
-    public boolean submitPost(Post post) {
-        return false;
+    public String postJSON(URL url, JSONObject put) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setChunkedStreamingMode(0);
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            conn.setRequestProperty("Accept", "application/json");
+            conn.setDoOutput(true);
+            writeJSON(put, conn.getOutputStream());
+            String ret = streamToString(conn.getInputStream());
+            conn.disconnect();
+            return ret;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
+    public JSONObject submitPost(Post post) {
+        try {
+            JSONObject put = new JSONObject();
+            put.put("phone", phone);
+            put.put("post", new JSONObject(new Gson().toJson(post)));
+            JSONObject status = new JSONObject(postJSON(new URL(server + "/submit"), put));
+            return status;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public FeatureCollection getPosts(LatLng position) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(server + "/posts").openConnection();
-            conn.setRequestMethod("POST");
-            conn.setChunkedStreamingMode(0);
-
-            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setDoOutput(true);
-
             JSONObject location = new JSONObject()
                     .put("location", new JSONArray().put(position.getLatitude()).put(position.getLongitude()));
 
-            writeJSON(location, conn.getOutputStream());
-            JSONArray resp = new JSONArray(streamToString(conn.getInputStream()));
+            String ret = postJSON(new URL(server + "/posts"), location);
+            if (ret == null || ret.length() == 0) {
+                return null;
+            }
+
+            JSONArray resp = new JSONArray(ret);
             FeatureCollection collection = new FeatureCollection();
 
             for (int i = 0; i < resp.length(); i++) {
@@ -67,11 +91,10 @@ public class Backend {
                 collection.addFeature(feature);
             }
 
-            conn.disconnect();
             return collection;
 
-        } catch (IOException e) {
-        } catch (JSONException e) {
+        }  catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }

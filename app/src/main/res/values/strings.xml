@@ -2,4 +2,5 @@
     <string name="app_name">near-android</string>
     <string name="close_text">close</string>
     <string name="content">content</string>
+    <string name="submit_hint">Speak your mind</string>
 </resources>

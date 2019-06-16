@@ -136,9 +136,9 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
                 userSymManager.update(locationMarker);
             } else {
                 CircleOptions userIcon = new CircleOptions()
-                        .withCircleColor("#1E88E5")
+                        .withCircleColor(String.format("#%06X", (0xFFFFFF & getResources().getColor(R.color.locationColor))))
                         .withCircleRadius(6f)
-                        .withCircleStrokeColor("#343332")
+                        .withCircleStrokeColor("#343332") //color of map background
                         .withCircleStrokeWidth(2f)
                         .withLatLng(loc);
                 locationMarker = userSymManager.create(userIcon);
@@ -450,8 +450,17 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         spinner = findViewById(R.id.spinner);
         postFab.setOnClickListener(v -> {
             Log.d("post", "posted!");
-            Intent intent = new Intent(this, SubmitActivity.class);
-            startActivity(intent);
+            if (location != null) {
+                Intent intent = new Intent(this, SubmitActivity.class);
+
+                Post put = new Post();
+                put.latitude = location.getLatitude();
+                put.longitude = location.getLongitude();
+
+                intent.putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(put));
+                Log.d("post", getLatLng(location).toString());
+                startActivity(intent);
+            }
         });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
         locateFab.setOnClickListener(v -> jumpToUserLocation());
@@ -490,7 +499,11 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     public void onResume() {
         super.onResume();
         mapView.onResume();
+        Log.d("resume", "resuming!");
         checkLocationPermission();
+        if (location != null) {
+            new RefreshPostsTask(true).execute(getLatLng(location));
+        }
     }
 
     @Override
@@ -532,7 +545,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         protected void onPostExecute(FeatureCollection featureCollection) {
             if (featureCollection != null) {
                 loadMap(featureCollection);
-                new RefreshPostsTask().execute(getLatLng(location));
+                new RefreshPostsTask(false).execute(getLatLng(location));
             } else {
                 new GetPostsTask().execute(getLatLng(location));
             }
@@ -540,6 +553,12 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     }
 
     private class RefreshPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
+
+        private boolean oneOff = false;
+        public RefreshPostsTask(boolean isOneOff) {
+            oneOff = isOneOff;
+        }
+
         protected FeatureCollection doInBackground(LatLng... positions) {
             Log.d("refresh", "refreshing!");
             return new Backend().getPosts(positions[0]);
@@ -548,8 +567,9 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         @Override
         protected void onPostExecute(FeatureCollection featureCollection) {
             refreshMap(featureCollection);
-            new Handler().postDelayed(() -> new RefreshPostsTask().execute(getLatLng(location)), (featureCollection != null ? 30 : 5) * 1000);
+            if (!oneOff) {
+                new Handler().postDelayed(() -> new RefreshPostsTask(false).execute(getLatLng(location)), (featureCollection != null ? 30 : 5) * 1000);
+            }
         }
     }
-
 }
