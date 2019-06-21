@@ -47,6 +47,10 @@ public class Backend {
             conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
             conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
+            put.put("login",
+                    new JSONObject()
+                            .put("phone", phone)
+            );
             writeJSON(put, conn.getOutputStream());
             String ret = streamToString(conn.getInputStream());
             conn.disconnect();
@@ -60,7 +64,6 @@ public class Backend {
     public JSONObject submitPost(Post post) {
         try {
             JSONObject put = new JSONObject();
-            put.put("phone", phone);
             put.put("post", new JSONObject(new Gson().toJson(post)));
             JSONObject status = new JSONObject(postJSON(new URL(server + "/submit"), put));
             return status;

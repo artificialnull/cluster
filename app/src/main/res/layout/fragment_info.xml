@@ -13,13 +13,26 @@
         app:layout_constraintStart_toStartOf="parent"
         android:id="@+id/post_user_layout">
 
-        <TextView
+        <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
+            style="?android:attr/borderlessButtonStyle"
+            android:src="@drawable/star_empty"
+            android:layout_centerVertical="true"
+            android:tint="@color/secondaryColor"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:id="@+id/star_button"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@+id/star_button"
             android:layout_alignParentTop="true"
             android:textSize="18sp"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="0dp"
             android:layout_marginTop="8dp"
             android:id="@+id/post_user"
             />
@@ -27,8 +40,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/post_user"
             android:layout_below="@+id/post_user"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="0dp"
             android:layout_marginBottom="8dp"
             android:id="@+id/post_time"
             />

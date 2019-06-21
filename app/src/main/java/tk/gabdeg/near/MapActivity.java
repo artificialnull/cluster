@@ -443,7 +443,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
         Log.d("navbar", Integer.toString(getNavBarHeight()));
 
-        Mapbox.getInstance(this, "pk.eyJ1IjoicGllbWFuMjIwMSIsImEiOiJjanc3ZDd0cTIxanc5NDBvdzFjanN2dmFzIn0.HWPlehe-8Hp6YvGnVH-0BQ");
+        Mapbox.getInstance(this, APIKey.key);
         setContentView(R.layout.activity_main);
         mapView = findViewById(R.id.mapView);
         FloatingActionButton postFab = findViewById(R.id.postFab);
