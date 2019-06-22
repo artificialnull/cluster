@@ -5,13 +5,17 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.location.Address;
 import android.location.Geocoder;
 import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -20,6 +24,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -29,6 +34,10 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class SubmitActivity extends AppCompatActivity {
@@ -37,22 +46,55 @@ public class SubmitActivity extends AppCompatActivity {
     public static final int CAMERA_CAPTURE = 1;
 
     boolean imageCaptured = false;
+    String imagePath = null;
     Post put;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == CAMERA_CAPTURE && resultCode == RESULT_OK) {
+            /*
             Bundle extras = data.getExtras();
             Bitmap thumbnail = (Bitmap) extras.get("data");
 
             ((ImageView) findViewById(R.id.submit_image_view)).setImageBitmap(thumbnail);
+            */
             ((ImageButton) findViewById(R.id.submit_image)).setImageResource(R.drawable.cancel);
 
             imageCaptured = true;
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            /*
             thumbnail.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
             put.image = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
+            */
+
+            if (imagePath != null) {
+                new SetPhotoTask().execute();
+            }
         }
+    }
+
+    String requestTakePhoto() {
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        if (cameraIntent.resolveActivity(getPackageManager()) != null) {
+
+            File image = null;
+            try {
+                String filename = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                image = File.createTempFile(filename, ".png", getExternalFilesDir(Environment.DIRECTORY_PICTURES));
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+
+            Uri photoURI = FileProvider.getUriForFile(this, "tk.gabdeg.fileprovider", image);
+            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
+
+            startActivityForResult(cameraIntent, CAMERA_CAPTURE);
+
+            return image.getAbsolutePath();
+        } else {
+            Snackbar.make(findViewById(R.id.submit_layout), "Can't open camera", Snackbar.LENGTH_LONG).show();
+        }
+        return null;
     }
 
     @Override
@@ -72,14 +114,8 @@ public class SubmitActivity extends AppCompatActivity {
                         ((ImageView) findViewById(R.id.submit_image_view)).setImageDrawable(null);
                         put.image = null;
                     } else {
-                        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        if (cameraIntent.resolveActivity(getPackageManager()) != null) {
-                            startActivityForResult(cameraIntent, CAMERA_CAPTURE);
-                        } else {
-                            Snackbar.make(findViewById(R.id.submit_layout), "Can't open camera", Snackbar.LENGTH_LONG).show();
-                        }
+                        imagePath = requestTakePhoto();
                     }
-
                 }
         );
 
@@ -117,6 +153,28 @@ public class SubmitActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private class SetPhotoTask extends AsyncTask<Void, Void, Bitmap> {
+
+        @Override
+        protected void onPreExecute() {
+            ((ImageView) findViewById(R.id.submit_image_view)).setImageResource(R.drawable.image);
+        }
+
+        @Override
+        protected Bitmap doInBackground(Void... voids) {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Bitmap fullSize = BitmapFactory.decodeFile(imagePath);
+            fullSize.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            put.image = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
+            return fullSize;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            ((ImageView) findViewById(R.id.submit_image_view)).setImageBitmap(bitmap);
         }
     }
 
