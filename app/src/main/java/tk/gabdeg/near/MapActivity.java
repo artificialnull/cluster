@@ -11,6 +11,12 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.transition.ChangeBounds;
+import android.transition.Fade;
+import android.transition.Slide;
+import android.transition.Transition;
+import android.transition.TransitionInflater;
+import android.transition.TransitionManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -18,6 +24,7 @@ import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.constraintlayout.widget.Guideline;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -223,49 +230,86 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         Log.d("cluster clicked", posts.size() + " children");
     }
 
-    void prepareInfoLayout() {
-        findViewById(R.id.infoFrame).setVisibility(View.VISIBLE);
-        findViewById(R.id.postFab).setVisibility(View.GONE);
-        findViewById(R.id.locateFab).setVisibility(View.GONE);
-    }
+    void openPopup() {
+        ConstraintSet popup = new ConstraintSet();
+        popup.clone((ConstraintLayout) findViewById(R.id.layout));
 
-    void stowInfoLayout() {
-        Guideline guideline = findViewById(R.id.infoFrameExtent);
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
         dimensions = new Point();
         getWindowManager().getDefaultDisplay().getSize(dimensions);
-        params.guideBegin = dimensions.y / 2;
-        Log.d("mapview height", "" + dimensions.y);
-        guideline.setLayoutParams(params);
 
-        findViewById(R.id.infoFrame).setVisibility(View.GONE);
-        findViewById(R.id.postFab).setVisibility(View.VISIBLE);
-        findViewById(R.id.locateFab).setVisibility(View.VISIBLE);
+        popup.setGuidelineEnd(R.id.infoFrameExtent, dimensions.y / 2 + getNavBarHeight());
+        popup.setVisibility(R.id.infoFrame, ConstraintSet.VISIBLE);
+        popup.setVisibility(R.id.locateFab, ConstraintSet.GONE);
+        popup.setVisibility(R.id.postFab, ConstraintSet.GONE);
+
+        TransitionManager.beginDelayedTransition(findViewById(R.id.layout), findViewById(R.id.infoFrame).getVisibility() == View.VISIBLE ? new ChangeBounds() : new Slide());
+        popup.applyTo(findViewById(R.id.layout));
     }
 
-    boolean toggleInfoFragmentSize() { //return true if big
+    void openExpanded() {
+        ConstraintSet expanded = new ConstraintSet();
+        expanded.clone((ConstraintLayout) findViewById(R.id.layout));
+
+        dimensions = new Point();
+        getWindowManager().getDefaultDisplay().getSize(dimensions);
+
+        expanded.setGuidelineEnd(R.id.infoFrameExtent, dimensions.y - getStatusBarHeight() + getNavBarHeight());
+        expanded.setVisibility(R.id.infoFrame, ConstraintSet.VISIBLE);
+        expanded.setVisibility(R.id.locateFab, ConstraintSet.GONE);
+        expanded.setVisibility(R.id.postFab, ConstraintSet.GONE);
+
+        TransitionManager.beginDelayedTransition(findViewById(R.id.layout));
+        expanded.applyTo(findViewById(R.id.layout));
+    }
+
+    void closeOverlay() {
+        ConstraintSet closed = new ConstraintSet();
+        closed.clone((ConstraintLayout) findViewById(R.id.layout));
+
+        closed.setGuidelineEnd(R.id.infoFrameExtent, 0);
+        closed.setVisibility(R.id.infoFrame, ConstraintSet.GONE);
+        closed.setVisibility(R.id.locateFab, ConstraintSet.VISIBLE);
+        closed.setVisibility(R.id.postFab, ConstraintSet.VISIBLE);
+
+        Transition transition = new Slide();
+        transition.addListener(new Transition.TransitionListener() {
+            @Override
+            public void onTransitionEnd(Transition transition) {
+                FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
+                fragmentTransaction.commit();
+            }
+            @Override
+            public void onTransitionCancel(Transition transition) { }
+            @Override
+            public void onTransitionPause(Transition transition) { }
+            @Override
+            public void onTransitionResume(Transition transition) { }
+            @Override
+            public void onTransitionStart(Transition transition) { }
+        });
+
+        TransitionManager.beginDelayedTransition(findViewById(R.id.layout), transition);
+        closed.applyTo(findViewById(R.id.layout));
+    }
+
+    boolean toggleInfoFragmentSize() { //return true if getting big
         Guideline guideline = findViewById(R.id.infoFrameExtent);
         ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
-        if (params.guideBegin == getStatusBarHeight()) {
-            dimensions = new Point();
-            getWindowManager().getDefaultDisplay().getSize(dimensions);
-            params.guideBegin = dimensions.y / 2;
-            Log.d("frag size", "shrinking");
-            guideline.setLayoutParams(params);
-            return false;
-        } else {
-            params.guideBegin = getStatusBarHeight();
-            Log.d("frag size", "growing");
-            guideline.setLayoutParams(params);
+        if (params.guideEnd == dimensions.y / 2 + getNavBarHeight()) {
+            // is currently small
+            openExpanded();
             return true;
+        } else {
+            // is currently big
+            openPopup();
+            return false;
         }
     }
 
     void removeInfoFragment() {
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
-        fragmentTransaction.commit();
-        stowInfoLayout();
+        Log.d("info", "removing");
+        closeOverlay();
     }
 
     void clickPost(Post post) {
@@ -279,8 +323,6 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
             CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(newLat, newLon));
             mapboxMap.easeCamera(moveToPost, 500);
 
-            prepareInfoLayout();
-
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
@@ -290,6 +332,9 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
             infoFragment.setArguments(bundle);
             fragmentTransaction.replace(R.id.infoFrame, infoFragment);
             fragmentTransaction.commit();
+            fragmentManager.executePendingTransactions();
+
+            openPopup();
         }
     }
 
@@ -350,10 +395,6 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
                 mapboxMap.setStyle(Style.DARK, style -> {
                     mapboxStyle = style;
-
-                    mapboxStyle.addImage(USER_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.find_location))), true);
-                    mapboxStyle.addImage(POST_ICON, Objects.requireNonNull(BitmapUtils.getBitmapFromDrawable(getResources().getDrawable(R.drawable.post_marker))), true);
-
                     String jsonStr = "{\"type\": \"FeatureCollection\", \"features\": []}";
                     if (posts != null) {
                         try {
@@ -470,14 +511,15 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         params.guideEnd = getNavBarHeight();
         guideline.setLayoutParams(params);
 
+        /*
         guideline = findViewById(R.id.infoFrameExtent);
-        params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
+        //params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
         dimensions = new Point();
         getWindowManager().getDefaultDisplay().getSize(dimensions);
         params.guideBegin = dimensions.y / 2;
         Log.d("mapview height", "" + dimensions.y);
         guideline.setLayoutParams(params);
-
+        */
 
         mapView.onCreate(savedInstanceState);
         mapView.addOnDidFinishRenderingMapListener(fully -> {

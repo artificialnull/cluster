@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -67,6 +68,7 @@ public class InfoFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         layout = inflater.inflate(R.layout.fragment_info, container, false);
 
+
         layout.findViewById(R.id.close_button).setOnClickListener(
                 v -> {
                     layout = null;
@@ -76,10 +78,12 @@ public class InfoFragment extends Fragment {
 
         layout.findViewById(R.id.toggle_button).setOnClickListener(
                 v -> {
-                    boolean expando = ((MapActivity) getActivity()).toggleInfoFragmentSize();
-                    ((ImageButton) layout.findViewById(R.id.toggle_button)).setImageResource(expando ? R.drawable.chevron_down : R.drawable.chevron_up);
+                    ((MapActivity) getActivity()).toggleInfoFragmentSize();
+                    ImageButton but = layout.findViewById(R.id.toggle_button);
+                    but.animate().rotation(but.getRotation() + 180).setInterpolator(new AccelerateDecelerateInterpolator());
                 }
         );
+
 
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) layout.findViewById(R.id.post_content_layout).getLayoutParams();
         params.bottomMargin = ((MapActivity) getActivity()).getNavBarHeight();
@@ -90,7 +94,8 @@ public class InfoFragment extends Fragment {
         });
 
         Post post = new Gson().fromJson(this.getArguments().getString(POST_KEY), Post.class);
-        setText(R.id.post_user, post.user);
+        setText(R.id.post_user, "Loading...");
+        setText(R.id.post_time, "Post #" + post.id);
 
         new GetPostContentTask().execute(post);
 

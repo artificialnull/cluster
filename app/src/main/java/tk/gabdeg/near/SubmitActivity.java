@@ -14,12 +14,20 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.transition.Slide;
+import android.transition.TransitionManager;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.TranslateAnimation;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -52,19 +60,7 @@ public class SubmitActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == CAMERA_CAPTURE && resultCode == RESULT_OK) {
-            /*
-            Bundle extras = data.getExtras();
-            Bitmap thumbnail = (Bitmap) extras.get("data");
-
-            ((ImageView) findViewById(R.id.submit_image_view)).setImageBitmap(thumbnail);
-            */
-            ((ImageButton) findViewById(R.id.submit_image)).setImageResource(R.drawable.cancel);
-
             imageCaptured = true;
-            /*
-            thumbnail.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-            put.image = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
-            */
 
             if (imagePath != null) {
                 new SetPhotoTask().execute();
@@ -110,9 +106,34 @@ public class SubmitActivity extends AppCompatActivity {
                 v -> {
                     if (imageCaptured) {
                         imageCaptured = false;
-                        ((ImageButton) findViewById(R.id.submit_image)).setImageResource(R.drawable.add_photo);
-                        ((ImageView) findViewById(R.id.submit_image_view)).setImageDrawable(null);
+
+                        findViewById(R.id.submit_image).animate().rotation(0).setInterpolator(new AccelerateDecelerateInterpolator());
                         put.image = null;
+
+                        TranslateAnimation animation = new TranslateAnimation(
+                                0,
+                                -findViewById(R.id.submit_image_view).getWidth(),
+                                0,
+                                0
+                        );
+                        animation.setInterpolator(new AccelerateDecelerateInterpolator());
+                        animation.setDuration(250);
+                        animation.setFillAfter(true);
+                        animation.setAnimationListener(new Animation.AnimationListener() {
+                            @Override
+                            public void onAnimationStart(Animation animation) {
+                            }
+
+                            @Override
+                            public void onAnimationEnd(Animation animation) {
+                                ((ImageView) findViewById(R.id.submit_image_view)).setImageDrawable(null);
+                            }
+
+                            @Override
+                            public void onAnimationRepeat(Animation animation) {
+                            }
+                        });
+                        findViewById(R.id.submit_image_view).startAnimation(animation);
                     } else {
                         imagePath = requestTakePhoto();
                     }
@@ -160,27 +181,56 @@ public class SubmitActivity extends AppCompatActivity {
 
         @Override
         protected void onPreExecute() {
-            ((ImageView) findViewById(R.id.submit_image_view)).setImageResource(R.drawable.image);
+            //findViewById(R.id.submit_image_loading).setVisibility(View.VISIBLE);
+            //findViewById(R.id.submit_image).setVisibility(View.INVISIBLE);
+
+            RotateAnimation rotate = new RotateAnimation(
+                    0, 360,
+                    Animation.RELATIVE_TO_SELF, 0.5f,
+                    Animation.RELATIVE_TO_SELF, 0.5f
+            );
+            rotate.setDuration(750);
+            rotate.setRepeatCount(Animation.INFINITE);
+            rotate.setInterpolator(new LinearInterpolator());
+            findViewById(R.id.submit_image).startAnimation(rotate);
         }
 
         @Override
         protected Bitmap doInBackground(Void... voids) {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             Bitmap fullSize = BitmapFactory.decodeFile(imagePath);
-            fullSize.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            Bitmap small = Bitmap.createScaledBitmap(fullSize, 800, (int) (fullSize.getHeight() * (800 / (float) fullSize.getWidth())), false);
+            small.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
             put.image = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT);
-            return fullSize;
+            return small;
         }
 
         @Override
         protected void onPostExecute(Bitmap bitmap) {
             ((ImageView) findViewById(R.id.submit_image_view)).setImageBitmap(bitmap);
+            //findViewById(R.id.submit_image_loading).setVisibility(View.INVISIBLE);
+            //findViewById(R.id.submit_image).setVisibility(View.VISIBLE);
+            findViewById(R.id.submit_image).clearAnimation();
+
+            findViewById(R.id.submit_image).animate().rotation(45f).setInterpolator(new LinearInterpolator());
+
+            TranslateAnimation animation = new TranslateAnimation(
+                    findViewById(R.id.submit_image_view).getWidth(),
+                    0,
+                    0,
+                    0
+            );
+            animation.setInterpolator(new AccelerateDecelerateInterpolator());
+            animation.setDuration(250);
+            animation.setFillAfter(true);
+            findViewById(R.id.submit_image_view).startAnimation(animation);
         }
     }
 
     private class GetAddressTask extends AsyncTask<LatLng, Void, Address> {
 
         private Context _context;
+
         public GetAddressTask(Context context) {
             _context = context;
         }

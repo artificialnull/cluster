@@ -31,7 +31,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/submit_text"
-                    android:paddingStart="8dp"
+                    android:layout_marginStart="8dp"
                     android:layout_alignParentStart="true"
                     android:layout_toStartOf="@+id/submit_image"
                     />
@@ -40,14 +40,24 @@
                     android:layout_alignParentEnd="true"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/add_photo"
+                    android:src="@drawable/add"
                     android:tint="@color/secondaryColor"
                     android:id="@+id/submit_image"
                     android:minHeight="0dp"
                     android:minWidth="0dp"
-                    android:paddingEnd="8dp"
-                    style="?android:attr/borderlessButtonStyle"
-                    android:layout_gravity="end"
+                    android:background="?selectableItemBackgroundBorderless"
+                    android:layout_margin="8dp"
+                    />
+
+                <ProgressBar
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignEnd="@+id/submit_image"
+                    android:layout_alignStart="@+id/submit_image"
+                    android:layout_alignBottom="@+id/submit_image"
+                    android:layout_alignTop="@+id/submit_image"
+                    android:id="@+id/submit_image_loading"
+                    android:visibility="invisible"
                     />
 
                 <ImageView

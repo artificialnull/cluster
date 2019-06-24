@@ -14,16 +14,18 @@
         android:id="@+id/post_user_layout">
 
         <ImageButton
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentStart="true"
-            style="?android:attr/borderlessButtonStyle"
             android:src="@drawable/star_empty"
             android:layout_centerVertical="true"
             android:tint="@color/secondaryColor"
             android:minHeight="0dp"
             android:minWidth="0dp"
             android:id="@+id/star_button"
+            android:background="?selectableItemBackgroundBorderless"
             />
 
         <TextView
@@ -48,32 +50,42 @@
             />
 
         <ImageButton
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            style="?android:attr/borderlessButtonStyle"
             android:src="@drawable/close"
             android:tint="@color/secondaryColor"
             android:minHeight="0dp"
             android:minWidth="0dp"
             android:contentDescription="@string/close_text"
             android:id="@+id/close_button"
+            android:background="?selectableItemBackgroundBorderless"
             />
 
         <ImageButton
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_toStartOf="@+id/close_button"
             android:layout_centerVertical="true"
-            style="?android:attr/borderlessButtonStyle"
             android:src="@drawable/chevron_up"
             android:tint="@color/secondaryColor"
             android:minHeight="0dp"
             android:minWidth="0dp"
             android:contentDescription="@string/close_text"
             android:id="@+id/toggle_button"
+            android:background="?selectableItemBackgroundBorderless"
             />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_below="@+id/post_time"
+            android:background="@color/secondaryColor"/>
 
     </RelativeLayout>
 
@@ -95,6 +107,7 @@
                 android:id="@+id/post_text"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
+                android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:textSize="20sp"
                 />
