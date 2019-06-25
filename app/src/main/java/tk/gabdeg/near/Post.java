@@ -15,7 +15,6 @@ public class Post {
     String user;
     int time;
     int stars;
-    boolean starred;
 
     @Override
     public String toString() {
@@ -29,7 +28,6 @@ public class Post {
                 ", user='" + user + '\'' +
                 ", time=" + time +
                 ", stars=" + stars +
-                ", starred=" + starred +
                 '}';
     }
 }

@@ -18,7 +18,6 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextSwitcher;
@@ -38,6 +37,7 @@ public class InfoFragment extends Fragment {
     private Bitmap image;
     String hash = "";
     int postID = 0;
+    int starCount = 0;
 
     boolean setText(int id, String text) {
         try {
@@ -55,6 +55,9 @@ public class InfoFragment extends Fragment {
 
     void formatPost(Post post) {
 
+        starCount = post.stars;
+        setText(R.id.star_count, "" + post.stars);
+
         long passed = (System.currentTimeMillis() / 1000) - post.time;
         String passedStr = "Posted ";
         if (passed >= 3600) {
@@ -69,7 +72,6 @@ public class InfoFragment extends Fragment {
         if (((TextView) ((TextSwitcher) layout.findViewById(R.id.post_time)).getCurrentView()).getText().equals(passedStr)) {
             return;
         }
-
         setText(R.id.post_time, passedStr);
 
         if (post.toString().equals(hash)) {
@@ -230,11 +232,13 @@ public class InfoFragment extends Fragment {
                     Animation.RELATIVE_TO_SELF, 0.5f,
                     Animation.RELATIVE_TO_SELF, 0.5f
             );
-            rotate.setDuration(500);
+            rotate.setDuration(750);
             rotate.setInterpolator(new AnticipateOvershootInterpolator());
             layout.findViewById(R.id.star_button).startAnimation(rotate);
             checkedStatus = ((CheckBox) layout.findViewById(R.id.star_button)).isChecked();
             layout.findViewById(R.id.star_button).setEnabled(false);
+            starCount += (checkedStatus ? 1 : -1);
+            setText(R.id.star_count, ""+starCount);
         }
 
         @Override

@@ -12,13 +12,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.transition.ChangeBounds;
-import android.transition.Fade;
 import android.transition.Slide;
 import android.transition.Transition;
-import android.transition.TransitionInflater;
 import android.transition.TransitionManager;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
@@ -58,14 +57,12 @@ import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.layers.TransitionOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
-import com.mapbox.mapboxsdk.utils.BitmapUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapClickListener {
 
@@ -242,7 +239,10 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         popup.setVisibility(R.id.locateFab, ConstraintSet.GONE);
         popup.setVisibility(R.id.postFab, ConstraintSet.GONE);
 
-        TransitionManager.beginDelayedTransition(findViewById(R.id.layout), findViewById(R.id.infoFrame).getVisibility() == View.VISIBLE ? new ChangeBounds() : new Slide());
+        Transition overshoot = new ChangeBounds();
+        overshoot.setInterpolator(new DecelerateInterpolator());
+
+        TransitionManager.beginDelayedTransition(findViewById(R.id.layout), findViewById(R.id.infoFrame).getVisibility() == View.VISIBLE ? overshoot : new Slide());
         popup.applyTo(findViewById(R.id.layout));
     }
 
@@ -258,7 +258,10 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         expanded.setVisibility(R.id.locateFab, ConstraintSet.GONE);
         expanded.setVisibility(R.id.postFab, ConstraintSet.GONE);
 
-        TransitionManager.beginDelayedTransition(findViewById(R.id.layout));
+        Transition overshoot = new ChangeBounds();
+        overshoot.setInterpolator(new DecelerateInterpolator());
+
+        TransitionManager.beginDelayedTransition(findViewById(R.id.layout), overshoot);
         expanded.applyTo(findViewById(R.id.layout));
     }
 
@@ -327,9 +330,6 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
             double newLat = post.latitude - currentBounds.getLatitudeSpan() / 4;
             double newLon = post.longitude;
 
-            CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(newLat, newLon));
-            mapboxMap.easeCamera(moveToPost, 500);
-
             FragmentManager fragmentManager = getSupportFragmentManager();
             FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 
@@ -342,6 +342,9 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
             fragmentManager.executePendingTransactions();
 
             openPopup();
+
+            CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(newLat, newLon));
+            mapboxMap.easeCamera(moveToPost, 750, true);
         }
     }
 
@@ -365,8 +368,10 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
                                 .build();
                         mapboxMap.animateCamera(
                                 CameraUpdateFactory.newCameraPosition(position),
-                                250
+                                750
                         );
+
+                        removeInfoFragment();
                     } catch (JSONException e) {
                         continue;
                     }
@@ -517,16 +522,6 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
         params.guideEnd = getNavBarHeight();
         guideline.setLayoutParams(params);
-
-        /*
-        guideline = findViewById(R.id.infoFrameExtent);
-        //params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
-        dimensions = new Point();
-        getWindowManager().getDefaultDisplay().getSize(dimensions);
-        params.guideBegin = dimensions.y / 2;
-        Log.d("mapview height", "" + dimensions.y);
-        guideline.setLayoutParams(params);
-        */
 
         mapView.onCreate(savedInstanceState);
         mapView.addOnDidFinishRenderingMapListener(fully -> {
