@@ -275,9 +275,11 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         transition.addListener(new Transition.TransitionListener() {
             @Override
             public void onTransitionEnd(Transition transition) {
-                FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
-                fragmentTransaction.commit();
+                if (getSupportFragmentManager().findFragmentById(R.id.infoFrame) != null) {
+                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                    fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
+                    fragmentTransaction.commit();
+                }
             }
             @Override
             public void onTransitionCancel(Transition transition) { }
@@ -313,6 +315,11 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     }
 
     void clickPost(Post post) {
+        if (getSupportFragmentManager().findFragmentById(R.id.infoFrame) != null) {
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
+            fragmentTransaction.commit();
+        }
         Log.d("post clicked", "id=" + post.id);
         if (mapboxMap != null) {
             LatLngBounds currentBounds = mapboxMap.getProjection().getVisibleRegion().latLngBounds;
@@ -558,6 +565,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     public void onStop() {
         super.onStop();
         mapView.onStop();
+        source = null;
     }
 
     @Override
@@ -608,6 +616,9 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
         @Override
         protected void onPostExecute(FeatureCollection featureCollection) {
+            if (source == null) {
+                return;
+            }
             refreshMap(featureCollection);
             if (!oneOff) {
                 new Handler().postDelayed(() -> new RefreshPostsTask(false).execute(getLatLng(location)), (featureCollection != null ? 30 : 5) * 1000);

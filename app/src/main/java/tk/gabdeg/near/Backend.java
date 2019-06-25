@@ -116,4 +116,24 @@ public class Backend {
         }
         return null;
     }
+
+    public boolean getStarredStatus(int postID) {
+        try {
+            JSONObject resp = new JSONObject(postJSON(new URL(server + "/post/" + postID + "/starred"), new JSONObject()));
+            if (resp.getBoolean("status")) {
+                return resp.getBoolean("starred");
+            }
+        } catch (Exception e) {}
+        return false;
+    }
+
+    public boolean setStarredStatus(int postID, boolean starred) {
+        try {
+            JSONObject resp = new JSONObject(postJSON(new URL(server + "/post/" + postID + "/star"), new JSONObject("{\"star\": " + starred + "}")));
+            if (resp.getBoolean("status")) {
+                return resp.getBoolean("starred");
+            }
+        } catch (Exception e) {}
+        return false;
+    }
 }

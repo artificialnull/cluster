@@ -14,6 +14,8 @@ public class Post {
     String image;
     String user;
     int time;
+    int stars;
+    boolean starred;
 
     @Override
     public String toString() {
@@ -23,10 +25,11 @@ public class Post {
                 ", latitude=" + latitude +
                 ", longitude=" + longitude +
                 ", text='" + text + '\'' +
-                ", image='" + image + '\'' +
+                ", image='" + (image != null && !image.isEmpty()) + '\'' +
                 ", user='" + user + '\'' +
                 ", time=" + time +
+                ", stars=" + stars +
+                ", starred=" + starred +
                 '}';
     }
-    
 }
