@@ -1,4 +1,4 @@
-package tk.gabdeg.near;
+package tk.gabdeg.cluster;
 
 import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
@@ -19,8 +19,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class Backend {
-    static String server = "http://192.168.1.172:5000";
+    static String server = "http://192.168.1.58:5000";
+
     static String phone = "2819498189";
+    static String password = "5npwci599zuvxuxc";
 
     String streamToString(InputStream is) throws IOException {
         String out = IOUtils.toString(is, StandardCharsets.UTF_8);
@@ -46,6 +48,7 @@ public class Backend {
             put.put("login",
                     new JSONObject()
                             .put("phone", phone)
+                            .put("password", password)
             );
             writeJSON(put, conn.getOutputStream());
             String ret = streamToString(conn.getInputStream());
@@ -131,5 +134,15 @@ public class Backend {
             }
         } catch (Exception e) {}
         return false;
+    }
+
+    public User getProfile() {
+        try {
+            User ret = new Gson().fromJson(postJSON(new URL(server + "/me"), new JSONObject()), User.class);
+            return ret;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

@@ -145,7 +145,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
-                android:scaleType="fitStart"
+                android:scaleType="fitCenter"
+                android:paddingBottom="16dp"
                 android:id="@+id/post_image"
                 android:contentDescription="@string/content"
                 />

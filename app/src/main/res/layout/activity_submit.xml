@@ -34,6 +34,7 @@
                     android:layout_marginStart="8dp"
                     android:layout_alignParentStart="true"
                     android:layout_toStartOf="@+id/submit_image"
+                    android:textColor="@color/primaryTextColor"
                     />
 
                 <ImageButton
@@ -107,8 +108,18 @@
         app:layout_anchorGravity="bottom|end"
         android:src="@drawable/submit_post"
         android:id="@+id/submit_button"
-        app:rippleColor="@color/primaryColor"
         android:layout_marginBottom="16dp"
         android:layout_marginEnd="16dp"
+        />
+
+    <ProgressBar
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/spinner"
+        app:layout_anchorGravity="center"
+        app:layout_anchor="@id/submit_button"
+        android:indeterminateTint="@color/secondaryTextColor"
+        android:elevation="16dp"
+        android:visibility="invisible"
         />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

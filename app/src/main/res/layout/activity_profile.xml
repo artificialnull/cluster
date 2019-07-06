@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:padding="16dp"
+        android:background="@color/primaryColor"
+        >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ishan Kamat"
+            android:textSize="24sp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:textColor="@color/primaryTextColor"
+            android:id="@+id/profile_name"
+            />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="9999"
+            android:textSize="16sp"
+            app:layout_constraintTop_toTopOf="@id/profile_name"
+            app:layout_constraintBottom_toBottomOf="@id/profile_name"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_centerVertical="true"
+            android:id="@+id/profile_stars"
+            android:textColor="@color/secondaryColor"
+            />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="0dp"
+            android:src="@drawable/star_filled"
+            android:tint="@color/secondaryColor"
+            app:layout_constraintTop_toTopOf="@+id/profile_stars"
+            app:layout_constraintBottom_toBottomOf="@id/profile_stars"
+            app:layout_constraintEnd_toStartOf="@id/profile_stars"
+            />
+
+        <RelativeLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="16dp"
+            android:id="@+id/current_post_limit_layout"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/profile_name"
+            >
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/circle_filled"
+                android:tint="@color/secondaryColor"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentStart="true"
+                android:textColor="@color/secondaryTextColor"
+                android:text="200"
+                android:gravity="center"
+                android:id="@+id/current_post_limit"
+                />
+
+        </RelativeLayout>
+
+        <ProgressBar
+            style="?android:attr/progressBarStyleHorizontal"
+            android:progress="50"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/post_limit_progress"
+            app:layout_constraintTop_toTopOf="@id/current_post_limit_layout"
+            app:layout_constraintStart_toEndOf="@id/current_post_limit_layout"
+            app:layout_constraintEnd_toStartOf="@id/next_post_limit_layout"
+            app:layout_constraintBottom_toBottomOf="@id/current_post_limit_layout"
+            />
+
+        <RelativeLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginTop="16dp"
+            android:id="@+id/next_post_limit_layout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/profile_name"
+            >
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/circle_empty"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentStart="true"
+                android:textColor="@color/secondaryColor"
+                android:text="85"
+                android:gravity="center"
+                android:id="@+id/next_post_limit"
+                />
+
+        </RelativeLayout>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

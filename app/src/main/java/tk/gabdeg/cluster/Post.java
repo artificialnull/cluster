@@ -1,4 +1,4 @@
-package tk.gabdeg.near;
+package tk.gabdeg.cluster;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
 

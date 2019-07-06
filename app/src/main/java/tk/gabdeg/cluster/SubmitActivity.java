@@ -1,4 +1,4 @@
-package tk.gabdeg.near;
+package tk.gabdeg.cluster;
 
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.view.MenuItem;
+import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
@@ -85,9 +87,17 @@ public class SubmitActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        finish();
+        return true;
+    }
+
+    @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_submit);
+
+        if (getSupportActionBar() != null) { getSupportActionBar().setDisplayHomeAsUpEnabled(true); }
 
         put = new Gson().fromJson(getIntent().getStringExtra(LOCATION_KEY), Post.class);
         ((TextView) findViewById(R.id.submit_address)).setText(put.latitude + ", " + put.longitude);
@@ -145,7 +155,8 @@ public class SubmitActivity extends AppCompatActivity {
     private class SubmitPostTask extends AsyncTask<Post, Void, JSONObject> {
         @Override
         protected void onPreExecute() {
-            ((FloatingActionButton) findViewById(R.id.submit_button)).setImageResource(R.drawable.more);
+            ((FloatingActionButton) findViewById(R.id.submit_button)).setImageDrawable(null);
+            findViewById(R.id.spinner).setVisibility(View.VISIBLE);
         }
 
         @Override
@@ -161,6 +172,7 @@ public class SubmitActivity extends AppCompatActivity {
                 } else {
                     Snackbar.make(findViewById(R.id.submit_layout), jsonObject.getString("message"), Snackbar.LENGTH_LONG).show();
                     ((FloatingActionButton) findViewById(R.id.submit_button)).setImageResource(R.drawable.submit_post);
+                    findViewById(R.id.spinner).setVisibility(View.INVISIBLE);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

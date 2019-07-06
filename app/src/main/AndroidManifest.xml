@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="tk.gabdeg.near">
+    package="tk.gabdeg.cluster">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.camera" android:required="true" />
@@ -14,7 +14,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme.Launcher">
-        <activity android:name=".MapActivity">
+        <activity android:name="tk.gabdeg.cluster.MapActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -22,7 +22,8 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".SubmitActivity" android:theme="@style/SubmitTheme"/>
+        <activity android:name="tk.gabdeg.cluster.SubmitActivity" android:theme="@style/SubmitTheme"/>
+        <activity android:name="tk.gabdeg.cluster.ProfileActivity" android:theme="@style/SubmitTheme"/>
 
         <provider
             android:authorities="tk.gabdeg.fileprovider"

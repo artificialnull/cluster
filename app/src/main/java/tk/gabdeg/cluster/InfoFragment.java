@@ -1,4 +1,4 @@
-package tk.gabdeg.near;
+package tk.gabdeg.cluster;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.gson.Gson;
@@ -32,12 +33,11 @@ import com.google.gson.Gson;
 public class InfoFragment extends Fragment {
 
     public static String POST_KEY = "post_serialized";
-
-    private View layout;
-    private Bitmap image;
     String hash = "";
     int postID = 0;
     int starCount = 0;
+    private View layout;
+    private Bitmap image;
 
     boolean setText(int id, String text) {
         try {
@@ -141,7 +141,7 @@ public class InfoFragment extends Fragment {
         });
 
         ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) layout.findViewById(R.id.post_content_layout).getLayoutParams();
-        params.bottomMargin = ((MapActivity) getActivity()).getNavBarHeight();
+        params.bottomMargin += ((MapActivity) getActivity()).getNavBarHeight();
 
         layout.setOnTouchListener((v, event) -> {
             layout.performClick();
@@ -196,7 +196,7 @@ public class InfoFragment extends Fragment {
             }
             Log.d("post", "got");
             if (post.user != null) {
-                Log.d("post" , post.toString());
+                Log.d("post", post.toString());
                 formatPost(post);
                 postID = post.id;
                 new Handler().postDelayed(
@@ -218,7 +218,9 @@ public class InfoFragment extends Fragment {
         protected void onPostExecute(Boolean aBoolean) {
             ((CheckBox) layout.findViewById(R.id.star_button)).setChecked(aBoolean);
             layout.findViewById(R.id.star_button).setEnabled(true);
-            layout.findViewById(R.id.star_button).getAnimation().setRepeatCount(0);
+            if (layout.findViewById(R.id.star_button).getAnimation() != null) {
+                layout.findViewById(R.id.star_button).getAnimation().setRepeatCount(0);
+            }
         }
     }
 
@@ -238,7 +240,13 @@ public class InfoFragment extends Fragment {
             checkedStatus = ((CheckBox) layout.findViewById(R.id.star_button)).isChecked();
             layout.findViewById(R.id.star_button).setEnabled(false);
             starCount += (checkedStatus ? 1 : -1);
-            setText(R.id.star_count, ""+starCount);
+            if (starCount < 0) {
+                starCount = 0;
+                if (checkedStatus) {
+                    starCount = 1;
+                }
+            }
+            setText(R.id.star_count, "" + starCount);
         }
 
         @Override

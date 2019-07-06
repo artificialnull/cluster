@@ -1,75 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/layout"
+    android:id="@+id/drawer_layout"
     android:fitsSystemWindows="false"
-    tools:context=".MapActivity">
+    >
 
-    <ProgressBar
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="128dp"
-        android:id="@+id/spinner"
-        />
+        android:fitsSystemWindows="false"
+        >
 
-    <com.mapbox.mapboxsdk.maps.MapView
-        android:clipToPadding="false"
-        android:layout_width="match_parent"
+        <com.mapbox.mapboxsdk.maps.MapView
+            android:clipToPadding="false"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/mapView"
+            android:visibility="invisible"
+            android:fitsSystemWindows="false"
+            />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/layout"
+            android:fitsSystemWindows="true"
+            >
+
+            <ProgressBar
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="128dp"
+                android:id="@+id/spinner"
+                />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:id="@+id/infoFrameExtent"
+                app:layout_constraintGuide_percent="0.5"
+                />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/postFab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/new_post"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:layout_marginBottom="16dp"
+                android:layout_marginEnd="16dp"
+                />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/locateFab"
+                app:backgroundTint="@color/locationColor"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/find_location"
+                app:layout_constraintBottom_toTopOf="@+id/postFab"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginBottom="16dp"
+                android:layout_marginEnd="16dp"
+                />
+
+            <ImageButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?selectableItemBackgroundBorderless"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:src="@drawable/menu"
+                android:tint="@color/secondaryColor"
+                android:layout_margin="16dp"
+                android:id="@+id/navigation_button"
+                />
+
+            <androidx.coordinatorlayout.widget.CoordinatorLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                app:layout_constraintTop_toBottomOf="@+id/infoFrameExtent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:id="@+id/infoFrame"
+                android:visibility="gone"
+                />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <com.google.android.material.navigation.NavigationView
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:id="@+id/mapView"
-        android:visibility="invisible"
+        android:layout_gravity="start|left"
+        android:id="@+id/navigation_drawer"
+        app:headerLayout="@layout/header_profile"
+        app:itemIconTint="@color/secondaryColor"
+        app:menu="@menu/drawer_menu"
         />
 
-    <androidx.constraintlayout.widget.Guideline
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:id="@+id/infoFrameExtent"
-        app:layout_constraintGuide_end="0dp"
-        />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:id="@+id/navBarTop"
-        app:layout_constraintGuide_end="50dp"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/postFab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/new_post"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/navBarTop"
-        app:rippleColor="@color/primaryColor"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="16dp"
-        />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/locateFab"
-        app:backgroundTint="@color/locationColor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/find_location"
-        app:layout_constraintBottom_toTopOf="@+id/postFab"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:rippleColor="@color/primaryColor"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="16dp"
-        />
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@+id/infoFrameExtent"
-        app:layout_constraintBottom_toTopOf="@+id/navBarTop"
-        android:id="@+id/infoFrame"
-        android:visibility="gone"
-        />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.drawerlayout.widget.DrawerLayout>
