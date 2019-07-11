@@ -1,9 +1,7 @@
 package tk.gabdeg.cluster;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -23,12 +21,9 @@ import android.view.animation.DecelerateInterpolator;
 import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.constraintlayout.widget.Guideline;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -70,38 +65,24 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     private MapView mapView;
     private MapboxMap mapboxMap;
-    private ProgressBar spinner;
-    private boolean finishedLoading = false;
     private GeoJsonSource source;
     private RefreshPostsTask refreshPostsTask;
-
-    void checkIfLoaded() {
-        if (finishedLoading) {
-            mapView.setVisibility(View.VISIBLE);
-            spinner.setVisibility(View.GONE);
-        }
-    }
 
     @SuppressLint("MissingPermission")
     void enableLocationComponent(Style mapboxStyle) {
         Log.d("location component", "enabling!");
-        if (mapboxMap != null) {
-            LocationComponent locationComponent = mapboxMap.getLocationComponent();
-            LocationComponentActivationOptions locationComponentActivationOptions = LocationComponentActivationOptions.builder(this, mapboxStyle)
-                    .locationComponentOptions(
-                            LocationComponentOptions.builder(this)
-                                    .accuracyAlpha(0)
-                                    .backgroundTintColor(getResources().getColor(R.color.primaryTextColor))
-                                    .foregroundTintColor(getResources().getColor(R.color.locationColor))
-                                    .enableStaleState(false)
-                                    .build()
-                    )
-                    .useDefaultLocationEngine(true)
-                    .build();
-            locationComponent.activateLocationComponent(locationComponentActivationOptions);
-            locationComponent.setLocationComponentEnabled(true);
-            locationComponent.setRenderMode(RenderMode.NORMAL);
-        }
+        LocationComponent locationComponent = mapboxMap.getLocationComponent();
+        LocationComponentActivationOptions locationComponentActivationOptions = LocationComponentActivationOptions.builder(this, mapboxStyle)
+                .locationComponentOptions(LocationComponentOptions.builder(this)
+                        .accuracyAlpha(0)
+                        .backgroundTintColor(getResources().getColor(R.color.primaryTextColor))
+                        .foregroundTintColor(getResources().getColor(R.color.locationColor))
+                        .enableStaleState(false)
+                        .build())
+                .useDefaultLocationEngine(true).build();
+        locationComponent.activateLocationComponent(locationComponentActivationOptions);
+        locationComponent.setLocationComponentEnabled(true);
+        locationComponent.setRenderMode(RenderMode.NORMAL);
     }
 
     int mixTwoColors(int color1, int color2, float amount) {
@@ -109,18 +90,11 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         final byte RED_CHANNEL = 16;
         final byte GREEN_CHANNEL = 8;
         final byte BLUE_CHANNEL = 0;
-
         final float inverseAmount = 1.0f - amount;
-
-        int a = ((int) (((float) (color1 >> ALPHA_CHANNEL & 0xff) * amount) +
-                ((float) (color2 >> ALPHA_CHANNEL & 0xff) * inverseAmount))) & 0xff;
-        int r = ((int) (((float) (color1 >> RED_CHANNEL & 0xff) * amount) +
-                ((float) (color2 >> RED_CHANNEL & 0xff) * inverseAmount))) & 0xff;
-        int g = ((int) (((float) (color1 >> GREEN_CHANNEL & 0xff) * amount) +
-                ((float) (color2 >> GREEN_CHANNEL & 0xff) * inverseAmount))) & 0xff;
-        int b = ((int) (((float) (color1 & 0xff) * amount) +
-                ((float) (color2 & 0xff) * inverseAmount))) & 0xff;
-
+        int a = ((int) (((float) (color1 >> ALPHA_CHANNEL & 0xff) * amount) + ((float) (color2 >> ALPHA_CHANNEL & 0xff) * inverseAmount))) & 0xff;
+        int r = ((int) (((float) (color1 >> RED_CHANNEL & 0xff) * amount) + ((float) (color2 >> RED_CHANNEL & 0xff) * inverseAmount))) & 0xff;
+        int g = ((int) (((float) (color1 >> GREEN_CHANNEL & 0xff) * amount) + ((float) (color2 >> GREEN_CHANNEL & 0xff) * inverseAmount))) & 0xff;
+        int b = ((int) (((float) (color1 & 0xff) * amount) + ((float) (color2 & 0xff) * inverseAmount))) & 0xff;
         return a << ALPHA_CHANNEL | r << RED_CHANNEL | g << GREEN_CHANNEL | b << BLUE_CHANNEL;
     }
 
@@ -152,11 +126,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void onUserFirstLocated() {
-        if (mapboxMap != null) {
-            CameraPosition position = new CameraPosition.Builder().target(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation())).zoom(13.0).build();
-            mapboxMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
-            checkIfLoaded();
-        }
+        CameraPosition position = new CameraPosition.Builder().target(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation())).zoom(13.0).build();
+        mapboxMap.moveCamera(CameraUpdateFactory.newCameraPosition(position));
     }
 
     void jumpToUserLocation() {
@@ -166,24 +137,14 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         }
     }
 
-    void checkLocationPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-        } else {
-            FusedLocationProviderClient locationClient = LocationServices.getFusedLocationProviderClient(this);
-            locationClient.getLastLocation().addOnSuccessListener(this, loc -> {
-                if (loc != null) {
-                    new GetPostsTask().execute(getLatLng(loc));
-                }
-            });
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == 1) {
-            checkLocationPermission();
-        }
+    @SuppressLint("MissingPermission")
+    void getInitialLocation() {
+        FusedLocationProviderClient locationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationClient.getLastLocation().addOnSuccessListener(this, loc -> {
+            if (loc != null) {
+                new GetPostsTask().execute(getLatLng(loc));
+            }
+        });
     }
 
     void clickCluster(List<Post> posts) {
@@ -204,7 +165,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         Transition overshoot = new ChangeBounds();
         overshoot.setInterpolator(new DecelerateInterpolator());
-
         TransitionManager.beginDelayedTransition(findViewById(R.id.layout), findViewById(R.id.infoFrame).getVisibility() == View.VISIBLE ? overshoot : new Slide());
         popup.applyTo(findViewById(R.id.layout));
     }
@@ -223,7 +183,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         Transition overshoot = new ChangeBounds();
         overshoot.setInterpolator(new DecelerateInterpolator());
-
         TransitionManager.beginDelayedTransition(findViewById(R.id.layout), overshoot);
         expanded.applyTo(findViewById(R.id.layout));
     }
@@ -359,67 +318,62 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void loadMap(FeatureCollection posts) {
-        if (mapView != null) {
-            mapView.getMapAsync(map -> {
+        mapView.getMapAsync(map -> {
+            mapboxMap = map;
+            mapboxMap.getUiSettings().setRotateGesturesEnabled(false);
+            mapboxMap.getUiSettings().setTiltGesturesEnabled(false);
 
-                mapboxMap = map;
-                mapboxMap.getUiSettings().setRotateGesturesEnabled(false);
-                mapboxMap.getUiSettings().setTiltGesturesEnabled(false);
-
-                mapboxMap.setStyle(Style.DARK, style -> {
-                    String jsonStr = "{\"type\": \"FeatureCollection\", \"features\": []}";
-                    if (posts != null) {
-                        try {
-                            Log.d("points", "adding source");
-                            jsonStr = posts.toJSON().toString();
-                        } catch (JSONException e) {
-                            Log.d("points", "bad json!");
-                        }
+            mapboxMap.setStyle(Style.DARK, style -> {
+                String jsonStr = "{\"type\": \"FeatureCollection\", \"features\": []}";
+                if (posts != null) {
+                    try {
+                        Log.d("points", "adding source");
+                        jsonStr = posts.toJSON().toString();
+                    } catch (JSONException e) {
+                        Log.d("points", "bad json!");
                     }
-                    source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions().withCluster(true).withClusterMaxZoom(26).withMaxZoom(26).withClusterRadius(48));
-                    style.addSource(source);
+                }
+                source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions().withCluster(true).withClusterMaxZoom(26).withMaxZoom(26).withClusterRadius(48));
+                style.addSource(source);
 
-                    float defaultRadius = 10f;
-                    int defaultColor = getResources().getColor(R.color.unclusteredColor);
-                    int clusteredColor = getResources().getColor(R.color.clusteredColor);
+                float defaultRadius = 10f;
+                int defaultColor = getResources().getColor(R.color.unclusteredColor);
+                int clusteredColor = getResources().getColor(R.color.clusteredColor);
 
-                    Log.d("points", "adding base layer");
-                    style.addLayer(new CircleLayer("points", "points").withProperties(PropertyFactory.circleColor(defaultColor), PropertyFactory.circleRadius(defaultRadius + 2f))
-                            .withFilter(Expression.not(Expression.has("point_count")))
-                    );
-                    Log.d("points", "adding cluster layer");
-                    CircleLayer clusterLayer = new CircleLayer("points-clustered", "points").withProperties(
-                            PropertyFactory.circleColor(Expression.step(
-                                    Expression.get("point_count"),
-                                    Expression.literal(mixColorsHex(defaultColor, clusteredColor, 0.75)),
-                                    Expression.stop(10, mixColorsHex(defaultColor, clusteredColor, 0.5)),
-                                    Expression.stop(100, mixColorsHex(defaultColor, clusteredColor, 0.25)),
-                                    Expression.stop(1000, mixColorsHex(defaultColor, clusteredColor, 0)))),
-                            PropertyFactory.circleRadius(Expression.product(Expression.sum(Expression.literal(1.5), Expression.division(Expression.log10(Expression.get("point_count")), Expression.literal(2))), Expression.literal(defaultRadius))),
-                            PropertyFactory.circleStrokeWidth(4f),
-                            PropertyFactory.circleStrokeColor(Color.WHITE)
-                    );
-                    clusterLayer.setFilter(Expression.has("point_count"));
-                    style.addLayer(clusterLayer);
-                    SymbolLayer textLayer = new SymbolLayer("point_labels", "points").withProperties(
-                            PropertyFactory.textAllowOverlap(true),
-                            PropertyFactory.textColor(Color.BLACK),
-                            PropertyFactory.textField(Expression.get("point_count_abbreviated")),
-                            PropertyFactory.textIgnorePlacement(false),
-                            PropertyFactory.textSize(14f)
-                    );
-                    style.setTransition(new TransitionOptions(0, 0, false));
-                    style.addLayer(textLayer);
+                Log.d("points", "adding base layer");
+                style.addLayer(new CircleLayer("points", "points").withProperties(PropertyFactory.circleColor(defaultColor), PropertyFactory.circleRadius(defaultRadius * 1.2f)).withFilter(Expression.not(Expression.has("point_count"))));
+                Log.d("points", "adding cluster layer");
+                CircleLayer clusterLayer = new CircleLayer("points-clustered", "points").withProperties(
+                        PropertyFactory.circleColor(Expression.step(
+                                Expression.get("point_count"),
+                                Expression.literal(mixColorsHex(defaultColor, clusteredColor, 0.75)),
+                                Expression.stop(10, mixColorsHex(defaultColor, clusteredColor, 0.5)),
+                                Expression.stop(100, mixColorsHex(defaultColor, clusteredColor, 0.25)),
+                                Expression.stop(1000, mixColorsHex(defaultColor, clusteredColor, 0)))),
+                        PropertyFactory.circleRadius(Expression.product(Expression.sum(Expression.literal(1.5), Expression.division(Expression.log10(Expression.get("point_count")), Expression.literal(2))), Expression.literal(defaultRadius))),
+                        PropertyFactory.circleStrokeWidth(4f),
+                        PropertyFactory.circleStrokeColor(Color.WHITE)
+                );
+                clusterLayer.setFilter(Expression.has("point_count"));
+                style.addLayer(clusterLayer);
+                SymbolLayer textLayer = new SymbolLayer("point_labels", "points").withProperties(
+                        PropertyFactory.textAllowOverlap(true),
+                        PropertyFactory.textColor(Color.BLACK),
+                        PropertyFactory.textField(Expression.get("point_count_abbreviated")),
+                        PropertyFactory.textIgnorePlacement(false),
+                        PropertyFactory.textSize(14f)
+                );
+                style.setTransition(new TransitionOptions(0, 0, false));
+                style.addLayer(textLayer);
 
-                    enableLocationComponent(style);
-                    mapboxMap.addOnMapClickListener(this);
-                });
+                enableLocationComponent(style);
+                mapboxMap.addOnMapClickListener(this);
             });
-        }
+        });
     }
 
-    void refreshMap(FeatureCollection posts) {
 
+    void refreshMap(FeatureCollection posts) {
         if (source != null && posts != null) {
             String jsonStr = "";
             try {
@@ -430,7 +384,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
             }
             source.setGeoJson(jsonStr);
         }
-
     }
 
     @Override
@@ -457,7 +410,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         mapView = findViewById(R.id.mapView);
         FloatingActionButton postFab = findViewById(R.id.postFab);
-        spinner = findViewById(R.id.spinner);
         postFab.setOnClickListener(v -> {
             Log.d("post", "posted!");
             if (mapboxMap.getLocationComponent().getLastKnownLocation() != null) {
@@ -479,13 +431,15 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         mapView.onCreate(savedInstanceState);
         mapView.addOnDidFinishRenderingMapListener(fully -> {
             Log.d("style", "finished rendering");
-            finishedLoading = true;
             refreshPostsTask = new RefreshPostsTask(false);
             refreshPostsTask.execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
             onUserFirstLocated();
+
+            mapView.setVisibility(View.VISIBLE);
+            findViewById(R.id.spinner).setVisibility(View.GONE);
         });
 
-        checkLocationPermission();
+        getInitialLocation();
     }
 
     @Override
@@ -561,7 +515,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     private class RefreshPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
-        private boolean oneOff = false;
+        private boolean oneOff;
 
         public RefreshPostsTask(boolean isOneOff) {
             oneOff = isOneOff;
