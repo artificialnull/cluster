@@ -13,8 +13,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme.Launcher">
-        <activity android:name="tk.gabdeg.cluster.MapActivity">
+        android:theme="@style/SplashTheme">
+        <activity android:name="tk.gabdeg.cluster.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -22,8 +22,14 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="tk.gabdeg.cluster.SubmitActivity" android:theme="@style/SubmitTheme"/>
-        <activity android:name="tk.gabdeg.cluster.ProfileActivity" android:theme="@style/SubmitTheme"/>
+        <activity android:name="tk.gabdeg.cluster.MapActivity" android:theme="@style/MapTheme"/>
+        <activity android:name="tk.gabdeg.cluster.SubmitActivity" android:theme="@style/NormalTheme"/>
+        <activity android:name="tk.gabdeg.cluster.ProfileActivity" android:theme="@style/NormalTheme"/>
+        <activity android:name="tk.gabdeg.cluster.WelcomeActivity" android:theme="@style/WelcomeTheme"/>
+        <activity android:name="tk.gabdeg.cluster.CreateProfileActivity" android:theme="@style/WelcomeTheme"/>
+        <activity android:name="tk.gabdeg.cluster.VerifyActivity" android:theme="@style/WelcomeTheme"/>
+        <activity android:name="tk.gabdeg.cluster.PermissionsActivity" android:theme="@style/WelcomeTheme"/>
+
 
         <provider
             android:authorities="tk.gabdeg.fileprovider"

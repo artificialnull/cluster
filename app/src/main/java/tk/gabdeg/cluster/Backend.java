@@ -1,5 +1,8 @@
 package tk.gabdeg.cluster;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.cocoahero.android.geojson.Point;
@@ -19,25 +22,34 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 public class Backend {
-    static String server = "http://192.168.1.58:5000";
+    static String server = "http://73.76.97.119:5000";
 
-    static String phone = "2819498189";
-    static String password = "5npwci599zuvxuxc";
+    static final String PREF_USERNAME = "cluster_username";
+    static final String PREF_PASSWORD = "cluster_password";
+    static String phone = "";
+    static String password = "";
 
-    String streamToString(InputStream is) throws IOException {
+    static boolean setCredentials(Context ctx) {
+        SharedPreferences preferences = ctx.getSharedPreferences(ctx.getString(R.string.preferenceKey), Context.MODE_PRIVATE);
+        phone = preferences.getString(PREF_USERNAME, "");
+        password = preferences.getString(PREF_PASSWORD, "");
+        return (!phone.isEmpty() && !password.isEmpty());
+    }
+
+    static String streamToString(InputStream is) throws IOException {
         String out = IOUtils.toString(is, StandardCharsets.UTF_8);
         is.close();
         return out;
     }
 
-    void writeJSON(JSONObject json, OutputStream out) throws IOException {
+    static void writeJSON(JSONObject json, OutputStream out) throws IOException {
         OutputStreamWriter writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
         writer.write(json.toString());
         writer.flush();
         writer.close();
     }
 
-    public String postJSON(URL url, JSONObject put) {
+    static String postJSON(URL url, JSONObject put) {
         try {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
@@ -60,7 +72,7 @@ public class Backend {
         }
     }
 
-    public JSONObject submitPost(Post post) {
+    public static JSONObject submitPost(Post post) {
         try {
             JSONObject put = new JSONObject();
             put.put("post", new JSONObject(new Gson().toJson(post)));
@@ -72,7 +84,7 @@ public class Backend {
         return null;
     }
 
-    public FeatureCollection getPosts(LatLng position) {
+    public static FeatureCollection getPosts(LatLng position) {
         try {
             JSONObject location = new JSONObject()
                     .put("location", new JSONArray().put(position.getLatitude()).put(position.getLongitude()));
@@ -101,7 +113,7 @@ public class Backend {
         return null;
     }
 
-    public Post getPost(int postID) {
+    public static Post getPost(int postID) {
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(server + "/post/" + postID).openConnection();
             conn.setChunkedStreamingMode(0);
@@ -116,7 +128,7 @@ public class Backend {
         return null;
     }
 
-    public boolean getStarredStatus(int postID) {
+    public static boolean getStarredStatus(int postID) {
         try {
             JSONObject resp = new JSONObject(postJSON(new URL(server + "/post/" + postID + "/starred"), new JSONObject()));
             if (resp.getBoolean("status")) {
@@ -126,7 +138,7 @@ public class Backend {
         return false;
     }
 
-    public boolean setStarredStatus(int postID, boolean starred) {
+    public static boolean setStarredStatus(int postID, boolean starred) {
         try {
             JSONObject resp = new JSONObject(postJSON(new URL(server + "/post/" + postID + "/star"), new JSONObject("{\"star\": " + starred + "}")));
             if (resp.getBoolean("status")) {
@@ -136,10 +148,33 @@ public class Backend {
         return false;
     }
 
-    public User getProfile() {
+    public static User getProfile() {
         try {
             User ret = new Gson().fromJson(postJSON(new URL(server + "/me"), new JSONObject()), User.class);
             return ret;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static JSONObject createProfile(String name, String phone) {
+        try {
+            JSONObject base = new JSONObject();
+            JSONObject put = new JSONObject();
+            put.put("name", name);
+            put.put("phone", phone);
+            base.put("signup", put);
+            return new JSONObject(postJSON(new URL(server + "/signup"), base));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static JSONObject verifyProfile() {
+        try {
+            return new JSONObject(postJSON(new URL(server + "/verify"), new JSONObject()));
         } catch (Exception e) {
             e.printStackTrace();
             return null;

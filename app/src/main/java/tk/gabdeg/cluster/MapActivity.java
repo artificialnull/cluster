@@ -19,7 +19,6 @@ import android.transition.TransitionManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.ProgressBar;
 
@@ -67,7 +66,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapClickListener {
+public class MapActivity extends BackendActivity implements MapboxMap.OnMapClickListener {
 
     private MapView mapView;
     private MapboxMap mapboxMap;
@@ -91,13 +90,10 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
             LocationComponentActivationOptions locationComponentActivationOptions = LocationComponentActivationOptions.builder(this, mapboxStyle)
                     .locationComponentOptions(
                             LocationComponentOptions.builder(this)
-                                    //.layerAbove("points-clustered")
                                     .accuracyAlpha(0)
-                                    .elevation(0)
                                     .backgroundTintColor(getResources().getColor(R.color.primaryTextColor))
-                                    .backgroundStaleTintColor(getResources().getColor(R.color.primaryTextColor))
                                     .foregroundTintColor(getResources().getColor(R.color.locationColor))
-                                    .foregroundStaleTintColor(getResources().getColor(R.color.locationColor))
+                                    .enableStaleState(false)
                                     .build()
                     )
                     .useDefaultLocationEngine(true)
@@ -276,7 +272,11 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
     void toggleInfoFragmentSize() {
         Guideline guideline = findViewById(R.id.infoFrameExtent);
         ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
-        if (params.guidePercent == 0.5f) { openExpanded(); } else { openPopup(); }
+        if (params.guidePercent == 0.5f) {
+            openExpanded();
+        } else {
+            openPopup();
+        }
     }
 
     void removeInfoFragment() {
@@ -435,9 +435,6 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        setTheme(R.style.AppTheme);
-
         super.onCreate(savedInstanceState);
 
         Mapbox.getInstance(this, APIKey.key);
@@ -473,7 +470,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
                 intent.putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(put));
                 Log.d("post", getLatLng(location).toString());
-                startActivity(intent);
+                startActivityForResult(intent, SubmitActivity.SUBMIT_FINISHED);
             }
         });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
@@ -489,6 +486,15 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
         });
 
         checkLocationPermission();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        Log.d("child-activity", "finished");
+        if (requestCode == SubmitActivity.SUBMIT_FINISHED) {
+            new RefreshPostsTask(true).execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
+        }
     }
 
     @Override
@@ -541,7 +547,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
         protected FeatureCollection doInBackground(LatLng... positions) {
             loc = positions[0];
-            return new Backend().getPosts(positions[0]);
+            return Backend.getPosts(positions[0]);
         }
 
         @Override
@@ -556,7 +562,6 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
     private class RefreshPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
         private boolean oneOff = false;
-        private LatLng loc;
 
         public RefreshPostsTask(boolean isOneOff) {
             oneOff = isOneOff;
@@ -564,8 +569,7 @@ public class MapActivity extends AppCompatActivity implements MapboxMap.OnMapCli
 
         protected FeatureCollection doInBackground(LatLng... positions) {
             Log.d("refresh", "refreshing!");
-            loc = positions[0];
-            return new Backend().getPosts(positions[0]);
+            return Backend.getPosts(positions[0]);
         }
 
         @Override

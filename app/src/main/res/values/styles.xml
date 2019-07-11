@@ -1,7 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+    <style name="MapTheme" parent="Theme.AppCompat.NoActionBar">
 
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:windowTranslucentNavigation">true</item>
@@ -12,11 +12,16 @@
         <item name="colorAccent">@color/secondaryColor</item>
     </style>
 
-    <style name="AppTheme.Launcher">
+    <style name="SplashTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryDark">@color/primaryDarkColor</item>
+        <item name="colorAccent">@color/secondaryColor</item>
         <item name="android:windowBackground">@drawable/splash_screen</item>
+        <item name="android:navigationBarColor">@color/primaryColor</item>
+        <item name="android:statusBarColor">@color/primaryColor</item>
     </style>
 
-    <style name="SubmitTheme" parent="Theme.AppCompat">
+    <style name="NormalTheme" parent="Theme.AppCompat">
         <item name="colorPrimary">@color/secondaryColor</item>
         <item name="colorPrimaryDark">@color/secondaryDarkColor</item>
         <item name="colorAccent">@color/secondaryColor</item>
@@ -26,6 +31,17 @@
         <item name="android:statusBarColor">@color/secondaryColor</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+    </style>
+    
+    <style name="WelcomeTheme" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryDark">@color/primaryDarkColor</item>
+        <item name="colorAccent">@color/secondaryColor</item>
+
+        <item name="android:navigationBarColor">@color/primaryColor</item>
+        <item name="android:statusBarColor">@color/primaryColor</item>
+        <item name="android:windowBackground">@color/primaryColor</item>
+
     </style>
 
 </resources>

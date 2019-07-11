@@ -4,4 +4,6 @@
     <string name="content">content</string>
     <string name="submit_hint">Speak your mind</string>
     <string name="profile">Profile</string>
+    
+    <string name="preferenceKey">tk.gabdeg.cluster.PREFERENCES</string>
 </resources>

@@ -174,7 +174,7 @@ public class InfoFragment extends Fragment {
     private class GetPostContentTask extends AsyncTask<Post, Void, Post> {
         @Override
         protected Post doInBackground(Post... posts) {
-            Post ret = new Backend().getPost(posts[0].id);
+            Post ret = Backend.getPost(posts[0].id);
             if (ret == null) {
                 posts[0].user = null;
                 return posts[0];
@@ -211,7 +211,7 @@ public class InfoFragment extends Fragment {
     private class GetStarredStatusTask extends AsyncTask<Post, Void, Boolean> {
         @Override
         protected Boolean doInBackground(Post... posts) {
-            return new Backend().getStarredStatus(posts[0].id);
+            return Backend.getStarredStatus(posts[0].id);
         }
 
         @Override
@@ -251,7 +251,7 @@ public class InfoFragment extends Fragment {
 
         @Override
         protected Boolean doInBackground(Post... posts) {
-            return new Backend().setStarredStatus(posts[0].id, checkedStatus);
+            return Backend.setStarredStatus(posts[0].id, checkedStatus);
         }
 
         @Override

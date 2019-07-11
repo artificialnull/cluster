@@ -41,10 +41,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class SubmitActivity extends AppCompatActivity {
+public class SubmitActivity extends BackendActivity {
 
     public static final String LOCATION_KEY = "location_serialized";
     public static final int CAMERA_CAPTURE = 1;
+    public static final int SUBMIT_FINISHED = 2;
 
     boolean imageCaptured = false;
     String imagePath = null;
@@ -161,7 +162,7 @@ public class SubmitActivity extends AppCompatActivity {
 
         @Override
         protected JSONObject doInBackground(Post... posts) {
-            return new Backend().submitPost(posts[0]);
+            return Backend.submitPost(posts[0]);
         }
 
         @Override
