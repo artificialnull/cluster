@@ -124,6 +124,21 @@ public class Backend {
             return ret;
 
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String getPostImage(int postID) {
+        try {
+            HttpURLConnection conn = (HttpURLConnection) new URL(server + "/post/" + postID + "/image").openConnection();
+            conn.setChunkedStreamingMode(0);
+
+            String ret = streamToString(conn.getInputStream());
+            conn.disconnect();
+            return ret;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return null;
     }

@@ -68,7 +68,7 @@ public class CreateProfileActivity extends AppCompatActivity {
         protected JSONObject doInBackground(String... strings) {
             String name = strings[0];
             String phone = strings[1];
-            return Backend.setCredentials(getApplicationContext()) ? Backend.createProfile(name, phone) : null;
+            return Backend.createProfile(name, phone);
         }
 
         @Override

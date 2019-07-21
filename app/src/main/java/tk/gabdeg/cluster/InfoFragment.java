@@ -33,7 +33,9 @@ import com.google.gson.Gson;
 public class InfoFragment extends Fragment {
 
     public static String POST_KEY = "post_serialized";
+
     String hash = "";
+    String imageHash = "";
     int postID = 0;
     int starCount = 0;
     private View layout;
@@ -91,12 +93,7 @@ public class InfoFragment extends Fragment {
             setText(R.id.post_text, post.text);
         }
         if (image == null) {
-            if (post.image != null && !post.image.equals("")) {
-                byte[] decoded = Base64.decode(post.image.getBytes(), Base64.DEFAULT);
-                image = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
-            } else {
-                return;
-            }
+            return;
         }
         layout.findViewById(R.id.post_image).startAnimation(animation);
         ((ImageView) layout.findViewById(R.id.post_image)).setImageBitmap(image);
@@ -174,6 +171,7 @@ public class InfoFragment extends Fragment {
     private class GetPostContentTask extends AsyncTask<Post, Void, Post> {
         @Override
         protected Post doInBackground(Post... posts) {
+            Log.d("info-fragment", "getting post");
             Post ret = Backend.getPost(posts[0].id);
             if (ret == null) {
                 posts[0].user = null;
@@ -181,8 +179,16 @@ public class InfoFragment extends Fragment {
             }
 
             if (ret.image != null && !ret.image.equals("")) {
-                byte[] decoded = Base64.decode(ret.image.getBytes(), Base64.DEFAULT);
-                image = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+                if (!ret.image.equals(imageHash)) {
+                    Log.d("info-fragment", "getting image");
+                    String imageStr = Backend.getPostImage(ret.id);
+                    byte[] decoded = Base64.decode(imageStr.getBytes(), Base64.DEFAULT);
+                    image = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+
+                    imageHash = ret.image;
+                } else {
+                    Log.d("info-fragment", imageHash + " = " + ret.image);
+                }
             }
 
             return ret;
