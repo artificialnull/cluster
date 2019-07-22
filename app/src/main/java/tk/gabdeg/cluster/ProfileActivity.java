@@ -8,8 +8,15 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
 
 public class ProfileActivity extends BackendActivity {
+
+    public static final int PROFILE_FINISHED = 3;
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -44,6 +51,7 @@ public class ProfileActivity extends BackendActivity {
                 return;
             }
             Log.d("user", user.toString());
+            new GetPostsTask().execute((ArrayList) user.posts.clone());
             ((TextView) findViewById(R.id.profile_name)).setText(user.name);
             ((TextView) findViewById(R.id.profile_stars)).setText(Integer.toString(user.stars));
             ((TextView) findViewById(R.id.current_post_limit)).setText(Integer.toString(user.postLimit));
@@ -53,4 +61,26 @@ public class ProfileActivity extends BackendActivity {
         }
     }
 
+    private class GetPostsTask extends AsyncTask<ArrayList<Integer>, Void, ArrayList<Post>> {
+        @Override
+        protected ArrayList<Post> doInBackground(ArrayList<Integer>... arrayLists) {
+            ArrayList<Integer> postList = arrayLists[0];
+            ArrayList<Post> ret = new ArrayList<>();
+            for (int postID : postList) {
+                ret.add(Backend.getPost(postID));
+            }
+            return ret;
+        }
+
+        @Override
+        protected void onPostExecute(ArrayList<Post> posts) {
+            for (Post post : posts) {
+                Log.d("user-posts", post.text);
+            }
+            RecyclerView recyclerView = findViewById(R.id.profile_post_list);
+            recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), new LinearLayoutManager(getApplicationContext()).getOrientation()));
+            recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+            recyclerView.setAdapter(new PostAdapter(getApplicationContext(), posts));
+        }
+    }
 }

@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.graphics.PointF;
 import android.location.Location;
 import android.os.AsyncTask;
@@ -18,13 +17,13 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
-import android.widget.ProgressBar;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.constraintlayout.widget.Guideline;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -131,10 +130,9 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void jumpToUserLocation() {
-        if (mapboxMap != null && mapView != null) {
-            CameraPosition position = new CameraPosition.Builder().target(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation())).zoom(Math.max(mapboxMap.getCameraPosition().zoom, 13.0)).build();
-            mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
-        }
+        if (mapboxMap == null || mapView == null) return;
+        CameraPosition position = new CameraPosition.Builder().target(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation())).zoom(Math.max(mapboxMap.getCameraPosition().zoom, 13.0)).build();
+        mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), 1000);
     }
 
     @SuppressLint("MissingPermission")
@@ -147,16 +145,9 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         });
     }
 
-    void clickCluster(List<Post> posts) {
-        Log.d("cluster clicked", posts.size() + " children");
-    }
-
     void openPopup() {
         ConstraintSet popup = new ConstraintSet();
         popup.clone((ConstraintLayout) findViewById(R.id.layout));
-
-        Point dimensions = new Point();
-        getWindowManager().getDefaultDisplay().getSize(dimensions);
 
         popup.setGuidelinePercent(R.id.infoFrameExtent, 0.5f);
         popup.setVisibility(R.id.infoFrame, ConstraintSet.VISIBLE);
@@ -173,9 +164,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         ConstraintSet expanded = new ConstraintSet();
         expanded.clone((ConstraintLayout) findViewById(R.id.layout));
 
-        Point dimensions = new Point();
-        getWindowManager().getDefaultDisplay().getSize(dimensions);
-
         expanded.setGuidelinePercent(R.id.infoFrameExtent, 0f);
         expanded.setVisibility(R.id.infoFrame, ConstraintSet.VISIBLE);
         expanded.setVisibility(R.id.locateFab, ConstraintSet.GONE);
@@ -187,7 +175,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         expanded.applyTo(findViewById(R.id.layout));
     }
 
-    void closeOverlay() {
+    void removeInfoFragment() {
         ConstraintSet closed = new ConstraintSet();
         closed.clone((ConstraintLayout) findViewById(R.id.layout));
 
@@ -230,42 +218,55 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     void toggleInfoFragmentSize() {
         Guideline guideline = findViewById(R.id.infoFrameExtent);
-        ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) guideline.getLayoutParams();
-        if (params.guidePercent == 0.5f) {
+        if (((ConstraintLayout.LayoutParams) guideline.getLayoutParams()).guidePercent == 0.5f) {
             openExpanded();
         } else {
             openPopup();
         }
     }
 
-    void removeInfoFragment() {
-        closeOverlay();
+    void initialFragmentOpen(Fragment fragment, LatLng center) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace(R.id.infoFrame, fragment);
+        fragmentTransaction.commit();
+        fragmentManager.executePendingTransactions();
+
+        openPopup();
+
+        LatLngBounds currentBounds = mapboxMap.getProjection().getVisibleRegion().latLngBounds;
+        CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(center.getLatitude() - currentBounds.getLatitudeSpan() / 4, center.getLongitude()));
+        mapboxMap.easeCamera(moveToPost, 750, true);
     }
 
     void clickPost(Post post) {
-        if (getSupportFragmentManager().findFragmentById(R.id.infoFrame) != null) {
-            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
-            fragmentTransaction.commit();
-        }
         Log.d("post clicked", "id=" + post.id);
-        if (mapboxMap != null) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            Bundle bundle = new Bundle();
-            bundle.putString(InfoFragment.POST_KEY, new Gson().toJson(post));
-            InfoFragment infoFragment = new InfoFragment();
-            infoFragment.setArguments(bundle);
-            fragmentTransaction.replace(R.id.infoFrame, infoFragment);
-            fragmentTransaction.commit();
-            fragmentManager.executePendingTransactions();
+        Bundle bundle = new Bundle();
+        bundle.putString(PostFragment.POST_KEY, new Gson().toJson(post));
+        PostFragment postFragment = new PostFragment();
+        postFragment.setArguments(bundle);
+        initialFragmentOpen(postFragment, post.location());
+    }
 
-            openPopup();
-
-            LatLngBounds currentBounds = mapboxMap.getProjection().getVisibleRegion().latLngBounds;
-            CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(post.latitude - currentBounds.getLatitudeSpan() / 4, post.longitude));
-            mapboxMap.easeCamera(moveToPost, 750, true);
+    LatLng computeCenter(List<Post> posts) {
+        double lat = 0, lon = 0;
+        for (Post post: posts) {
+            LatLng pos = post.location();
+            lat += pos.getLatitude();
+            lon += pos.getLongitude();
         }
+        return new LatLng(lat / posts.size(), lon / posts.size());
+    }
+
+    void clickCluster(List<Post> posts) {
+        Log.d("cluster clicked", posts.size() + " children");
+
+        Bundle bundle = new Bundle();
+        bundle.putString(PostListFragment.POST_LIST_KEY, new Gson().toJson(posts));
+        PostListFragment postListFragment = new PostListFragment();
+        postListFragment.setArguments(bundle);
+
+        initialFragmentOpen(postListFragment, computeCenter(posts));
     }
 
     public boolean onMapClick(@NonNull LatLng point) {
@@ -273,7 +274,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         List<com.mapbox.geojson.Feature> featureList = mapboxMap.queryRenderedFeatures(pointf, "points-clustered");
         if (featureList.size() > 0) {
             for (com.mapbox.geojson.Feature feature : featureList) {
-                Log.d("points", feature.toJson());
                 if (source.getClusterExpansionZoom(feature) <= mapboxMap.getMaxZoomLevel()) {
                     try {
                         assert feature.geometry() != null;
@@ -281,16 +281,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                                 new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
                                 new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0)
                         );
-                        Log.d("points", pos.toString());
-                        CameraPosition position = new CameraPosition.Builder()
-                                .target(pos)
-                                .zoom(source.getClusterExpansionZoom(feature) + 0.1)
-                                .build();
-                        mapboxMap.animateCamera(
-                                CameraUpdateFactory.newCameraPosition(position),
-                                750
-                        );
-
+                        CameraPosition position = new CameraPosition.Builder().target(pos).zoom(source.getClusterExpansionZoom(feature) + 0.1).build();
+                        mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), 750);
                         removeInfoFragment();
                     } catch (JSONException e) {
                         continue;
@@ -327,13 +319,13 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                 String jsonStr = "{\"type\": \"FeatureCollection\", \"features\": []}";
                 if (posts != null) {
                     try {
-                        Log.d("points", "adding source");
                         jsonStr = posts.toJSON().toString();
                     } catch (JSONException e) {
                         Log.d("points", "bad json!");
                     }
                 }
-                source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions().withCluster(true).withClusterMaxZoom(26).withMaxZoom(26).withClusterRadius(48));
+                mapboxMap.setMaxZoomPreference(19.5);
+                source = new GeoJsonSource("points", jsonStr, new GeoJsonOptions().withCluster(true).withClusterMaxZoom(19).withMaxZoom(19).withClusterRadius(48));
                 style.addSource(source);
 
                 float defaultRadius = 10f;
@@ -341,7 +333,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                 int clusteredColor = getResources().getColor(R.color.clusteredColor);
 
                 Log.d("points", "adding base layer");
-                style.addLayer(new CircleLayer("points", "points").withProperties(PropertyFactory.circleColor(defaultColor), PropertyFactory.circleRadius(defaultRadius * 1.2f)).withFilter(Expression.not(Expression.has("point_count"))));
+                style.addLayer(new CircleLayer("points", "points").withProperties(PropertyFactory.circleColor(defaultColor), PropertyFactory.circleRadius(defaultRadius * 1.2f), PropertyFactory.circleStrokeColor(Color.WHITE), PropertyFactory.circleStrokeWidth(2f)).withFilter(Expression.not(Expression.has("point_count"))));
                 Log.d("points", "adding cluster layer");
                 CircleLayer clusterLayer = new CircleLayer("points-clustered", "points").withProperties(
                         PropertyFactory.circleColor(Expression.step(
@@ -372,12 +364,10 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         });
     }
 
-
     void refreshMap(FeatureCollection posts) {
         if (source != null && posts != null) {
             String jsonStr = "";
             try {
-                Log.d("points-refresh", "adding source");
                 jsonStr = posts.toJSON().toString();
             } catch (JSONException e) {
                 Log.d("points-refresh", "bad json!");
@@ -397,7 +387,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
             switch (menuItem.getItemId()) {
                 case R.id.menu_profile:
                     Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
-                    startActivity(intent);
+                    startActivityForResult(intent, ProfileActivity.PROFILE_FINISHED);
                     break;
                 default:
                     break;
@@ -411,7 +401,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         mapView = findViewById(R.id.mapView);
         FloatingActionButton postFab = findViewById(R.id.postFab);
         postFab.setOnClickListener(v -> {
-            Log.d("post", "posted!");
             if (mapboxMap.getLocationComponent().getLastKnownLocation() != null) {
                 Location location = mapboxMap.getLocationComponent().getLastKnownLocation();
                 Intent intent = new Intent(this, SubmitActivity.class);
@@ -448,6 +437,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         Log.d("child-activity", "finished");
         if (requestCode == SubmitActivity.SUBMIT_FINISHED) {
             new RefreshPostsTask(true).execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
+        } else if (requestCode == ProfileActivity.PROFILE_FINISHED) {
+            Log.d("child-activity", "profile");
         }
     }
 
@@ -516,28 +507,23 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     private class RefreshPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
         private boolean oneOff;
-
         public RefreshPostsTask(boolean isOneOff) {
             oneOff = isOneOff;
         }
 
         protected FeatureCollection doInBackground(LatLng... positions) {
-            Log.d("refresh", "refreshing!");
             return Backend.getPosts(positions[0]);
         }
 
         @Override
         protected void onPostExecute(FeatureCollection featureCollection) {
-            if (isCancelled()) {
-                return;
-            }
+            if (isCancelled()) return;
             refreshMap(featureCollection);
-            if (!oneOff) {
-                new Handler().postDelayed(() -> {
-                    refreshPostsTask = new RefreshPostsTask(false);
-                    refreshPostsTask.execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
-                }, (featureCollection != null ? 30 : 5) * 1000);
-            }
+            if (oneOff) return;
+            new Handler().postDelayed(() -> {
+                refreshPostsTask = new RefreshPostsTask(false);
+                refreshPostsTask.execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
+            }, (featureCollection != null ? 30 : 5) * 1000);
         }
     }
 }

@@ -16,6 +16,20 @@ public class Post {
     int time;
     int stars;
 
+    public String ago() {
+        long passed = (System.currentTimeMillis() / 1000) - time;
+        String passedStr = "Posted ";
+        if (passed >= 3600) {
+            passedStr += (passed / 3600) + "h";
+        } else if (passed >= 60) {
+            passedStr += (passed / 60) + "m";
+        } else {
+            passedStr += passed + "s";
+        }
+        passedStr += " ago";
+        return passedStr;
+    }
+
     @Override
     public String toString() {
         return "Post{" +
