@@ -41,13 +41,13 @@ public class PostListFragment extends InfoFragment {
 
         TextSwitcher postUser = layout.findViewById(R.id.post_user);
         postUser.setCurrentText(posts.size() + " posts clustered");
-        postUser.setOutAnimation(getContext(), android.R.anim.slide_out_right);
-        postUser.setInAnimation(getContext(), android.R.anim.slide_in_left);
+        postUser.setOutAnimation(activity, android.R.anim.slide_out_right);
+        postUser.setInAnimation(activity, android.R.anim.slide_in_left);
 
         TextSwitcher postTime = layout.findViewById(R.id.post_time);
         postTime.setCurrentText("Loading...");
-        postTime.setOutAnimation(getContext(), android.R.anim.slide_out_right);
-        postTime.setInAnimation(getContext(), android.R.anim.slide_in_left);
+        postTime.setOutAnimation(activity, android.R.anim.slide_out_right);
+        postTime.setInAnimation(activity, android.R.anim.slide_in_left);
 
         new GetPostsTask().execute(postIDs);
 
@@ -71,15 +71,13 @@ public class PostListFragment extends InfoFragment {
                 Log.d("user-posts", post.text);
             }
             RecyclerView recyclerView = layout.findViewById(R.id.post_content_layout);
-            recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), new LinearLayoutManager(getActivity()).getOrientation()));
-            recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-            recyclerView.setAdapter(new PostAdapter(getActivity(), posts));
+            recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), new LinearLayoutManager(activity).getOrientation()));
+            recyclerView.setLayoutManager(new LinearLayoutManager(activity));
+            recyclerView.setAdapter(new PostAdapter(activity, posts, toOpen -> activity.clickPost(toOpen)));
 
             Post recent = posts.get(0);
             for (Post post : posts) {
-                if (post.time > recent.time) {
-                    recent = post;
-                }
+                if (post.time > recent.time) recent = post;
             }
             setText(R.id.post_time, recent.ago());
         }

@@ -14,22 +14,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/SplashTheme">
-        <activity android:name="tk.gabdeg.cluster.SplashActivity">
+        <activity android:name=".SplashActivity" android:screenOrientation="sensorPortrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name="tk.gabdeg.cluster.MapActivity" android:theme="@style/MapTheme"/>
-        <activity android:name="tk.gabdeg.cluster.SubmitActivity" android:theme="@style/NormalTheme"/>
-        <activity android:name="tk.gabdeg.cluster.ProfileActivity" android:theme="@style/NormalTheme"/>
-        <activity android:name="tk.gabdeg.cluster.WelcomeActivity" android:theme="@style/WelcomeTheme"/>
-        <activity android:name="tk.gabdeg.cluster.CreateProfileActivity" android:theme="@style/WelcomeTheme"/>
-        <activity android:name="tk.gabdeg.cluster.VerifyActivity" android:theme="@style/WelcomeTheme"/>
-        <activity android:name="tk.gabdeg.cluster.PermissionsActivity" android:theme="@style/WelcomeTheme"/>
-
+        <activity android:name=".MapActivity" android:theme="@style/MapTheme" android:screenOrientation="sensorPortrait"/>
+        <activity android:name=".SubmitActivity" android:theme="@style/NormalTheme" android:screenOrientation="sensorPortrait"/>
+        <activity android:name=".ProfileActivity" android:theme="@style/NormalTheme" android:screenOrientation="sensorPortrait"/>
+        <activity android:name=".WelcomeActivity" android:theme="@style/WelcomeTheme" android:screenOrientation="sensorPortrait"/>
+        <activity android:name="CreateProfileActivity" android:theme="@style/WelcomeTheme" android:screenOrientation="sensorPortrait"/>
+        <activity android:name=".VerifyActivity" android:theme="@style/WelcomeTheme" android:screenOrientation="sensorPortrait"/>
+        <activity android:name=".PermissionsActivity" android:theme="@style/WelcomeTheme" android:screenOrientation="sensorPortrait"/>
 
         <provider
             android:authorities="tk.gabdeg.fileprovider"

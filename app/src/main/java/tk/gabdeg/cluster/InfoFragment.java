@@ -12,6 +12,7 @@ import androidx.fragment.app.Fragment;
 public class InfoFragment extends Fragment {
 
     View layout;
+    MapActivity activity;
 
     boolean setText(int id, String text) {
         try {
@@ -29,16 +30,18 @@ public class InfoFragment extends Fragment {
 
     void bindActionsToLayout() {
         if (layout != null) {
+            activity = ((MapActivity) getActivity());
+
             layout.findViewById(R.id.close_button).setOnClickListener(
                     v -> {
                         layout = null;
-                        ((MapActivity) getActivity()).removeInfoFragment();
+                        activity.removeInfoFragment();
                     }
             );
 
             layout.findViewById(R.id.toggle_button).setOnClickListener(
                     v -> {
-                        ((MapActivity) getActivity()).toggleInfoFragmentSize();
+                        activity.toggleInfoFragmentSize();
                         ImageButton but = layout.findViewById(R.id.toggle_button);
                         but.animate().rotation(but.getRotation() + 180).setInterpolator(new AccelerateDecelerateInterpolator());
                     }

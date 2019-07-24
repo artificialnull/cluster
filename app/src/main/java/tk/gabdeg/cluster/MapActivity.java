@@ -250,7 +250,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     LatLng computeCenter(List<Post> posts) {
         double lat = 0, lon = 0;
-        for (Post post: posts) {
+        for (Post post : posts) {
             LatLng pos = post.location();
             lat += pos.getLatitude();
             lon += pos.getLongitude();
@@ -386,8 +386,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
             ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(Gravity.LEFT);
             switch (menuItem.getItemId()) {
                 case R.id.menu_profile:
-                    Intent intent = new Intent(getApplicationContext(), ProfileActivity.class);
-                    startActivityForResult(intent, ProfileActivity.PROFILE_FINISHED);
+                    startActivityForResult(new Intent(getApplicationContext(), ProfileActivity.class), ProfileActivity.PROFILE_FINISHED);
                     break;
                 default:
                     break;
@@ -403,15 +402,12 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         postFab.setOnClickListener(v -> {
             if (mapboxMap.getLocationComponent().getLastKnownLocation() != null) {
                 Location location = mapboxMap.getLocationComponent().getLastKnownLocation();
-                Intent intent = new Intent(this, SubmitActivity.class);
-
                 Post put = new Post();
                 put.latitude = location.getLatitude();
                 put.longitude = location.getLongitude();
 
-                intent.putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(put));
                 Log.d("post", getLatLng(location).toString());
-                startActivityForResult(intent, SubmitActivity.SUBMIT_FINISHED);
+                startActivityForResult(new Intent(this, SubmitActivity.class).putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(put)), SubmitActivity.SUBMIT_FINISHED);
             }
         });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
@@ -438,7 +434,9 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         if (requestCode == SubmitActivity.SUBMIT_FINISHED) {
             new RefreshPostsTask(true).execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
         } else if (requestCode == ProfileActivity.PROFILE_FINISHED) {
-            Log.d("child-activity", "profile");
+            if (resultCode == ProfileActivity.RESULT_OK) {
+                clickPost(new Gson().fromJson(data.getStringExtra(ProfileActivity.PROFILE_POST_OPEN), Post.class));
+            }
         }
     }
 
@@ -507,6 +505,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     private class RefreshPostsTask extends AsyncTask<LatLng, Void, FeatureCollection> {
         private boolean oneOff;
+
         public RefreshPostsTask(boolean isOneOff) {
             oneOff = isOneOff;
         }

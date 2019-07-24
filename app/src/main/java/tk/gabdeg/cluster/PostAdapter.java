@@ -17,9 +17,15 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
     private ArrayList<Post> posts;
     private Context context;
-    public PostAdapter(Context ctx, ArrayList<Post> posts) {
+    OnPostOpen onPostOpen;
+    public PostAdapter(Context ctx, ArrayList<Post> posts, OnPostOpen onPostOpen) {
         this.posts = (ArrayList<Post>) posts.clone();
         this.context = ctx;
+        this.onPostOpen = onPostOpen;
+    }
+
+    public interface OnPostOpen {
+        void open(Post toOpen);
     }
 
     public class PostViewHolder extends RecyclerView.ViewHolder {
@@ -28,7 +34,6 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             super(v);
             view = v;
             view.findViewById(R.id.star_button).setEnabled(false);
-            ((CheckBox) view.findViewById(R.id.star_button)).setChecked(true);
 
             TextSwitcher postUser = view.findViewById(R.id.post_preview);
             postUser.setCurrentText("Loading...");
@@ -36,7 +41,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             postUser.setInAnimation(context, android.R.anim.slide_in_left);
 
             TextSwitcher postTime = view.findViewById(R.id.post_time);
-            postTime.setCurrentText("");
+            postTime.setCurrentText("Loading...");
             postTime.setOutAnimation(context, android.R.anim.slide_out_right);
             postTime.setInAnimation(context, android.R.anim.slide_in_left);
         }
@@ -67,8 +72,11 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         Post put = posts.get(position);
         holder.setText(R.id.post_preview, put.text);
         holder.setText(R.id.post_time, put.ago());
+
         holder.setText(R.id.star_count, Integer.toString(put.stars));
 
+        ((CheckBox) holder.view.findViewById(R.id.star_button)).setChecked(put.starred);
+        holder.view.findViewById(R.id.open_button).setOnClickListener(v -> onPostOpen.open(put));
     }
 
     @Override

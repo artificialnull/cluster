@@ -115,14 +115,8 @@ public class Backend {
 
     public static Post getPost(int postID) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(server + "/post/" + postID).openConnection();
-            conn.setChunkedStreamingMode(0);
-
-            Post ret = new Gson().fromJson(streamToString(conn.getInputStream()), Post.class);
-            conn.disconnect();
-
+            Post ret = new Gson().fromJson(postJSON(new URL(server + "/post/" + postID), new JSONObject()), Post.class);
             return ret;
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -131,12 +125,7 @@ public class Backend {
 
     public static String getPostImage(int postID) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(server + "/post/" + postID + "/image").openConnection();
-            conn.setChunkedStreamingMode(0);
-
-            String ret = streamToString(conn.getInputStream());
-            conn.disconnect();
-            return ret;
+            return postJSON(new URL(server + "/post/" + postID + "/image"), new JSONObject());
         } catch (IOException e) {
             e.printStackTrace();
         }

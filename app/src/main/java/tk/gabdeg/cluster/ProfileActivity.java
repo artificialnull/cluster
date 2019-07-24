@@ -1,5 +1,6 @@
 package tk.gabdeg.cluster;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,11 +13,14 @@ import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.gson.Gson;
+
 import java.util.ArrayList;
 
 public class ProfileActivity extends BackendActivity {
 
     public static final int PROFILE_FINISHED = 3;
+    public static final String PROFILE_POST_OPEN = "open profile post";
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -38,6 +42,11 @@ public class ProfileActivity extends BackendActivity {
         new GetProfileTask().execute();
     }
 
+    void quitToPost(Post target) {
+        setResult(RESULT_OK, new Intent().putExtra(PROFILE_POST_OPEN, new Gson().toJson(target)));
+        finish();
+    }
+
     private class GetProfileTask extends AsyncTask<Void, Void, User> {
         @Override
         protected User doInBackground(Void... voids) {
@@ -51,24 +60,25 @@ public class ProfileActivity extends BackendActivity {
                 return;
             }
             Log.d("user", user.toString());
-            new GetPostsTask().execute((ArrayList) user.posts.clone());
+            new GetPostsTask().execute(user);
             ((TextView) findViewById(R.id.profile_name)).setText(user.name);
             ((TextView) findViewById(R.id.profile_stars)).setText(Integer.toString(user.stars));
             ((TextView) findViewById(R.id.current_post_limit)).setText(Integer.toString(user.postLimit));
             ((TextView) findViewById(R.id.next_post_limit)).setText(Integer.toString(user.nextLimit));
-            ((ProgressBar) findViewById(R.id.post_limit_progress)).setIndeterminate(false);
-            ((ProgressBar) findViewById(R.id.post_limit_progress)).setProgress((int) (user.limitProgress * 100));
         }
     }
 
-    private class GetPostsTask extends AsyncTask<ArrayList<Integer>, Void, ArrayList<Post>> {
+    private class GetPostsTask extends AsyncTask<User, Void, ArrayList<Post>> {
+        private User user;
+
         @Override
-        protected ArrayList<Post> doInBackground(ArrayList<Integer>... arrayLists) {
-            ArrayList<Integer> postList = arrayLists[0];
+        protected ArrayList<Post> doInBackground(User... users) {
+            ArrayList<Integer> postList = users[0].posts;
             ArrayList<Post> ret = new ArrayList<>();
             for (int postID : postList) {
                 ret.add(Backend.getPost(postID));
             }
+            user = users[0];
             return ret;
         }
 
@@ -80,7 +90,10 @@ public class ProfileActivity extends BackendActivity {
             RecyclerView recyclerView = findViewById(R.id.profile_post_list);
             recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), new LinearLayoutManager(getApplicationContext()).getOrientation()));
             recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-            recyclerView.setAdapter(new PostAdapter(getApplicationContext(), posts));
+            recyclerView.setAdapter(new PostAdapter(getApplicationContext(), posts, ProfileActivity.this::quitToPost));
+
+            ((ProgressBar) findViewById(R.id.post_limit_progress)).setIndeterminate(false);
+            ((ProgressBar) findViewById(R.id.post_limit_progress)).setProgress((int) (user.limitProgress * 100));
         }
     }
 }

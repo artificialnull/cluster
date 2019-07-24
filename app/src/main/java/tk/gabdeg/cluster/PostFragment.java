@@ -50,8 +50,6 @@ public class PostFragment extends InfoFragment {
             return;
         }
         hash = post.toString();
-        new GetStarredStatusTask().execute(post);
-
         setText(R.id.post_user, post.user);
 
         AlphaAnimation animation = new AlphaAnimation(0, 1);
@@ -96,13 +94,13 @@ public class PostFragment extends InfoFragment {
         Post post = new Gson().fromJson(this.getArguments().getString(POST_KEY), Post.class);
         TextSwitcher postUser = layout.findViewById(R.id.post_user);
         postUser.setCurrentText("Post #" + post.id);
-        postUser.setOutAnimation(getContext(), android.R.anim.slide_out_right);
-        postUser.setInAnimation(getContext(), android.R.anim.slide_in_left);
+        postUser.setOutAnimation(activity, android.R.anim.slide_out_right);
+        postUser.setInAnimation(activity, android.R.anim.slide_in_left);
 
         TextSwitcher postTime = layout.findViewById(R.id.post_time);
         postTime.setCurrentText("Loading...");
-        postTime.setOutAnimation(getContext(), android.R.anim.slide_out_right);
-        postTime.setInAnimation(getContext(), android.R.anim.slide_in_left);
+        postTime.setOutAnimation(activity, android.R.anim.slide_out_right);
+        postTime.setInAnimation(activity, android.R.anim.slide_in_left);
 
         new GetPostContentTask().execute(post);
 
@@ -152,28 +150,17 @@ public class PostFragment extends InfoFragment {
             if (post.user != null) {
                 Log.d("post", post.toString());
                 formatPost(post);
+                ((CheckBox) layout.findViewById(R.id.star_button)).setChecked(post.starred);
+                layout.findViewById(R.id.star_button).setEnabled(true);
+                if (layout.findViewById(R.id.star_button).getAnimation() != null) {
+                    layout.findViewById(R.id.star_button).getAnimation().setRepeatCount(0);
+                }
                 postID = post.id;
                 new Handler().postDelayed(
                         () -> new GetPostContentTask().execute(post), 5000
                 );
             } else {
                 new GetPostContentTask().execute(post);
-            }
-        }
-    }
-
-    private class GetStarredStatusTask extends AsyncTask<Post, Void, Boolean> {
-        @Override
-        protected Boolean doInBackground(Post... posts) {
-            return Backend.getStarredStatus(posts[0].id);
-        }
-
-        @Override
-        protected void onPostExecute(Boolean aBoolean) {
-            ((CheckBox) layout.findViewById(R.id.star_button)).setChecked(aBoolean);
-            layout.findViewById(R.id.star_button).setEnabled(true);
-            if (layout.findViewById(R.id.star_button).getAnimation() != null) {
-                layout.findViewById(R.id.star_button).getAnimation().setRepeatCount(0);
             }
         }
     }

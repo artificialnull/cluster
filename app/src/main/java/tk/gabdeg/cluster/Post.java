@@ -15,6 +15,7 @@ public class Post {
     String user;
     int time;
     int stars;
+    boolean starred;
 
     public String ago() {
         long passed = (System.currentTimeMillis() / 1000) - time;
