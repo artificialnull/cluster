@@ -69,6 +69,8 @@ public class PostFragment extends InfoFragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        if (layout != null) return layout;
         layout = inflater.inflate(R.layout.fragment_info, container, false);
         bindActionsToLayout();
 

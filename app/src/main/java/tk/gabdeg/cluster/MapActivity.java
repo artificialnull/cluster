@@ -25,7 +25,6 @@ import androidx.constraintlayout.widget.Guideline;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -188,11 +187,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         transition.addListener(new Transition.TransitionListener() {
             @Override
             public void onTransitionEnd(Transition transition) {
-                if (getSupportFragmentManager().findFragmentById(R.id.infoFrame) != null) {
-                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                    fragmentTransaction.remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame));
-                    fragmentTransaction.commit();
-                }
+                if (getSupportFragmentManager().findFragmentById(R.id.infoFrame) != null)
+                    getSupportFragmentManager().beginTransaction().remove(getSupportFragmentManager().findFragmentById(R.id.infoFrame)).commit();
             }
 
             @Override
@@ -216,9 +212,13 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         closed.applyTo(findViewById(R.id.layout));
     }
 
-    void toggleInfoFragmentSize() {
+    boolean isInfoFragmentSmall() {
         Guideline guideline = findViewById(R.id.infoFrameExtent);
-        if (((ConstraintLayout.LayoutParams) guideline.getLayoutParams()).guidePercent == 0.5f) {
+        return (((ConstraintLayout.LayoutParams) guideline.getLayoutParams()).guidePercent == 0.5f);
+    }
+
+    void toggleInfoFragmentSize() {
+        if (isInfoFragmentSmall()) {
             openExpanded();
         } else {
             openPopup();
@@ -227,9 +227,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     void initialFragmentOpen(Fragment fragment, LatLng center) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.infoFrame, fragment);
-        fragmentTransaction.commit();
+        fragmentManager.beginTransaction().replace(R.id.infoFrame, fragment).addToBackStack(String.valueOf(isInfoFragmentSmall())).commit();
         fragmentManager.executePendingTransactions();
 
         openPopup();
@@ -424,6 +422,15 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
             findViewById(R.id.spinner).setVisibility(View.GONE);
         });
 
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                FragmentManager.BackStackEntry lastEntry = getSupportFragmentManager().getBackStackEntryAt(getSupportFragmentManager().getBackStackEntryCount() - 1);
+                Log.d("back-stack", "small: " + lastEntry.getName());
+                if (!lastEntry.getName().equals(String.valueOf(isInfoFragmentSmall()))) {
+                    toggleInfoFragmentSize();
+                }
+            }
+        });
         getInitialLocation();
     }
 
@@ -434,9 +441,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         if (requestCode == SubmitActivity.SUBMIT_FINISHED) {
             new RefreshPostsTask(true).execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
         } else if (requestCode == ProfileActivity.PROFILE_FINISHED) {
-            if (resultCode == ProfileActivity.RESULT_OK) {
+            if (resultCode == ProfileActivity.RESULT_OK)
                 clickPost(new Gson().fromJson(data.getStringExtra(ProfileActivity.PROFILE_POST_OPEN), Post.class));
-            }
         }
     }
 

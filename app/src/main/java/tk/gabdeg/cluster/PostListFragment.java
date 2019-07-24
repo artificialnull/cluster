@@ -24,9 +24,21 @@ public class PostListFragment extends InfoFragment {
 
     public static String POST_LIST_KEY = "post_list_serialized";
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        Log.d("post-list", "creating!");
+        if (getView() != null) {
+            Log.d("post-list", "getView not null");
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+        if (layout != null) return layout;
         layout = inflater.inflate(R.layout.fragment_post_list, container, false);
         bindActionsToLayout();
 
