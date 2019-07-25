@@ -139,9 +139,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     void getInitialLocation() {
         FusedLocationProviderClient locationClient = LocationServices.getFusedLocationProviderClient(this);
         locationClient.getLastLocation().addOnSuccessListener(this, loc -> {
-            if (loc != null) {
-                new GetPostsTask().execute(getLatLng(loc));
-            }
+            if (loc != null) new GetPostsTask().execute(getLatLng(loc));
         });
     }
 
@@ -219,20 +217,14 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void toggleInfoFragmentSize() {
-        if (infoFragmentSize() == 0.5f) {
-            openExpanded();
-        } else {
-            openPopup();
-        }
+        if (infoFragmentSize() == 0.5f) openExpanded();
+        else openPopup();
     }
 
     void initialFragmentOpen(Fragment fragment, LatLng center, boolean backstack) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction().replace(R.id.infoFrame, fragment);
-        if (backstack) {
-            fragmentTransaction.addToBackStack(String.valueOf(infoFragmentSize()));
-            Log.d("initialFragmentOpen", "size: " + infoFragmentSize());
-        }
+        if (backstack) fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
         fragmentManager.executePendingTransactions();
 
@@ -242,6 +234,10 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         LatLngBounds currentBounds = mapboxMap.getProjection().getVisibleRegion().latLngBounds;
         CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(center.getLatitude() - currentBounds.getLatitudeSpan() / 4, center.getLongitude()));
         mapboxMap.easeCamera(moveToPost, 750, true);
+    }
+
+    boolean backStackNotEmpty() {
+        return getSupportFragmentManager().getBackStackEntryCount() > 0;
     }
 
     void clickPost(Post post) {
@@ -268,13 +264,10 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void clickCluster(List<Post> posts) {
-        Log.d("cluster clicked", posts.size() + " children");
-
         Bundle bundle = new Bundle();
         bundle.putString(PostListFragment.POST_LIST_KEY, new Gson().toJson(posts));
         PostListFragment postListFragment = new PostListFragment();
         postListFragment.setArguments(bundle);
-
         initialFragmentOpen(postListFragment, computeCenter(posts), false);
     }
 
@@ -286,10 +279,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                 if (source.getClusterExpansionZoom(feature) <= mapboxMap.getMaxZoomLevel()) {
                     try {
                         assert feature.geometry() != null;
-                        LatLng pos = new LatLng(
-                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1),
-                                new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0)
-                        );
+                        LatLng pos = new LatLng(new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(1), new JSONObject(feature.geometry().toJson()).getJSONArray("coordinates").getDouble(0));
                         CameraPosition position = new CameraPosition.Builder().target(pos).zoom(source.getClusterExpansionZoom(feature) + 0.1).build();
                         mapboxMap.animateCamera(CameraUpdateFactory.newCameraPosition(position), 750);
                         removeInfoFragment();
@@ -303,7 +293,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                     }
                     MapActivity.this.clickCluster(children);
                 }
-                Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
+                //Log.d("points", "zoom level " + source.getClusterExpansionZoom(feature));
             }
             return true;
         }
@@ -406,7 +396,6 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         findViewById(R.id.navigation_button).setOnClickListener(v -> ((DrawerLayout) findViewById(R.id.drawer_layout)).openDrawer(Gravity.LEFT));
         ((NavigationView) findViewById(R.id.navigation_drawer)).getHeaderView(0).setPadding(0, getStatusBarHeight(), 0, 0);
 
-        mapView = findViewById(R.id.mapView);
         FloatingActionButton postFab = findViewById(R.id.postFab);
         postFab.setOnClickListener(v -> {
             if (mapboxMap.getLocationComponent().getLastKnownLocation() != null) {
@@ -414,21 +403,19 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                 Post put = new Post();
                 put.latitude = location.getLatitude();
                 put.longitude = location.getLongitude();
-
-                Log.d("post", getLatLng(location).toString());
                 startActivityForResult(new Intent(this, SubmitActivity.class).putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(put)), SubmitActivity.SUBMIT_FINISHED);
             }
         });
         FloatingActionButton locateFab = findViewById(R.id.locateFab);
         locateFab.setOnClickListener(v -> jumpToUserLocation());
 
+        mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
         mapView.addOnDidFinishRenderingMapListener(fully -> {
             Log.d("style", "finished rendering");
             refreshPostsTask = new RefreshPostsTask(false);
             refreshPostsTask.execute(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
             onUserFirstLocated();
-
             mapView.setVisibility(View.VISIBLE);
             findViewById(R.id.spinner).setVisibility(View.GONE);
         });
@@ -440,9 +427,9 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     public void onBackPressed() {
         if (getSupportFragmentManager().getBackStackEntryCount() == 0 && infoFragmentSize() != 1f) {
             removeInfoFragment();
-        } else {
-            super.onBackPressed();
+            return;
         }
+        super.onBackPressed();
     }
 
     @Override
@@ -479,9 +466,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     public void onStop() {
         super.onStop();
         mapView.onStop();
-        if (refreshPostsTask != null) {
-            refreshPostsTask.cancel(true);
-        }
+        if (refreshPostsTask != null) refreshPostsTask.cancel(true);
     }
 
     @Override

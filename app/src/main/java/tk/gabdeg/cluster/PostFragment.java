@@ -75,7 +75,8 @@ public class PostFragment extends InfoFragment {
         }
         layout = inflater.inflate(R.layout.fragment_info, container, false);
         bindActionsToLayout();
-        if (activity.infoFragmentSize() != size) {
+        if (activity.infoFragmentSize() < size) {
+            Log.d("info-fragment", "size: " + activity.infoFragmentSize());
             //adapt to different size by keeping view size, changing button state
             rotateToggleButton();
         }
@@ -115,13 +116,6 @@ public class PostFragment extends InfoFragment {
         return layout;
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        layout = null;
-        Log.d("fragment", "DESTROYEED");
-    }
-
     private class GetPostContentTask extends AsyncTask<Post, Void, Post> {
         @Override
         protected Post doInBackground(Post... posts) {
@@ -149,7 +143,7 @@ public class PostFragment extends InfoFragment {
 
         @Override
         protected void onPostExecute(Post post) {
-            if (layout == null) {
+            if (getView() == null) {
                 Log.d("info-fragment", "quitting task");
                 return;
             }

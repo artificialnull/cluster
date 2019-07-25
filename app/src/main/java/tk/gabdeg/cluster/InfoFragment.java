@@ -41,9 +41,10 @@ public class InfoFragment extends Fragment {
             layout.findViewById(R.id.close_button).setOnClickListener(
                     v -> {
                         layout = null;
-                        activity.removeInfoFragment();
+                        activity.onBackPressed();
                     }
             );
+            if (activity.backStackNotEmpty()) ((ImageButton) layout.findViewById(R.id.close_button)).setImageResource(R.drawable.close_post);
 
             layout.findViewById(R.id.toggle_button).setOnClickListener(
                     v -> {
