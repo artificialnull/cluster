@@ -38,7 +38,13 @@ public class PostListFragment extends InfoFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        if (layout != null) return layout;
+        if (layout != null) {
+            if (size != activity.infoFragmentSize()) {
+                //adapt to different size by changing the view size
+                activity.toggleInfoFragmentSize();
+            }
+            return layout;
+        }
         layout = inflater.inflate(R.layout.fragment_post_list, container, false);
         bindActionsToLayout();
 
@@ -47,7 +53,6 @@ public class PostListFragment extends InfoFragment {
 
         ArrayList<Integer> postIDs = new ArrayList<>();
         for (Post post : posts) {
-            Log.d("post-list", "" + post.id);
             postIDs.add(post.id);
         }
 
@@ -79,13 +84,13 @@ public class PostListFragment extends InfoFragment {
 
         @Override
         protected void onPostExecute(ArrayList<Post> posts) {
-            for (Post post : posts) {
-                Log.d("user-posts", post.text);
-            }
             RecyclerView recyclerView = layout.findViewById(R.id.post_content_layout);
             recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), new LinearLayoutManager(activity).getOrientation()));
             recyclerView.setLayoutManager(new LinearLayoutManager(activity));
-            recyclerView.setAdapter(new PostAdapter(activity, posts, toOpen -> activity.clickPost(toOpen)));
+            recyclerView.setAdapter(new PostAdapter(activity, posts, toOpen -> {
+                size = activity.infoFragmentSize();
+                activity.clickPost(toOpen, true);
+            }));
 
             Post recent = posts.get(0);
             for (Post post : posts) {

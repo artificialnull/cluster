@@ -13,6 +13,7 @@ public class InfoFragment extends Fragment {
 
     View layout;
     MapActivity activity;
+    float size = 0.5f;
 
     boolean setText(int id, String text) {
         try {
@@ -26,6 +27,11 @@ public class InfoFragment extends Fragment {
             }
         }
         return true;
+    }
+
+    void rotateToggleButton() {
+        ImageButton but = layout.findViewById(R.id.toggle_button);
+        but.animate().rotation(but.getRotation() + 180).setInterpolator(new AccelerateDecelerateInterpolator());
     }
 
     void bindActionsToLayout() {
@@ -42,8 +48,7 @@ public class InfoFragment extends Fragment {
             layout.findViewById(R.id.toggle_button).setOnClickListener(
                     v -> {
                         activity.toggleInfoFragmentSize();
-                        ImageButton but = layout.findViewById(R.id.toggle_button);
-                        but.animate().rotation(but.getRotation() + 180).setInterpolator(new AccelerateDecelerateInterpolator());
+                        rotateToggleButton();
                     }
             );
             layout.setOnTouchListener((v, event) -> {

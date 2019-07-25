@@ -70,9 +70,15 @@ public class PostFragment extends InfoFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        if (layout != null) return layout;
+        if (layout != null) {
+            return layout;
+        }
         layout = inflater.inflate(R.layout.fragment_info, container, false);
         bindActionsToLayout();
+        if (activity.infoFragmentSize() != size) {
+            //adapt to different size by keeping view size, changing button state
+            rotateToggleButton();
+        }
 
         RotateAnimation rotate = new RotateAnimation(
                 0, 360,
@@ -128,7 +134,6 @@ public class PostFragment extends InfoFragment {
 
             if (ret.image != null && !ret.image.equals("")) {
                 if (!ret.image.equals(imageHash)) {
-                    Log.d("info-fragment", "getting image");
                     String imageStr = Backend.getPostImage(ret.id);
                     byte[] decoded = Base64.decode(imageStr.getBytes(), Base64.DEFAULT);
                     image = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
@@ -145,12 +150,10 @@ public class PostFragment extends InfoFragment {
         @Override
         protected void onPostExecute(Post post) {
             if (layout == null) {
-                Log.d("post", "quid");
+                Log.d("info-fragment", "quitting task");
                 return;
             }
-            Log.d("post", "got");
             if (post.user != null) {
-                Log.d("post", post.toString());
                 formatPost(post);
                 ((CheckBox) layout.findViewById(R.id.star_button)).setChecked(post.starred);
                 layout.findViewById(R.id.star_button).setEnabled(true);

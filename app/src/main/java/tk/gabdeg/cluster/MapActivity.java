@@ -25,6 +25,7 @@ import androidx.constraintlayout.widget.Guideline;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.cocoahero.android.geojson.FeatureCollection;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -212,25 +213,31 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         closed.applyTo(findViewById(R.id.layout));
     }
 
-    boolean isInfoFragmentSmall() {
+    float infoFragmentSize() {
         Guideline guideline = findViewById(R.id.infoFrameExtent);
-        return (((ConstraintLayout.LayoutParams) guideline.getLayoutParams()).guidePercent == 0.5f);
+        return (((ConstraintLayout.LayoutParams) guideline.getLayoutParams()).guidePercent);
     }
 
     void toggleInfoFragmentSize() {
-        if (isInfoFragmentSmall()) {
+        if (infoFragmentSize() == 0.5f) {
             openExpanded();
         } else {
             openPopup();
         }
     }
 
-    void initialFragmentOpen(Fragment fragment, LatLng center) {
+    void initialFragmentOpen(Fragment fragment, LatLng center, boolean backstack) {
         FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.infoFrame, fragment).addToBackStack(String.valueOf(isInfoFragmentSmall())).commit();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction().replace(R.id.infoFrame, fragment);
+        if (backstack) {
+            fragmentTransaction.addToBackStack(String.valueOf(infoFragmentSize()));
+            Log.d("initialFragmentOpen", "size: " + infoFragmentSize());
+        }
+        fragmentTransaction.commit();
         fragmentManager.executePendingTransactions();
 
-        openPopup();
+        if (infoFragmentSize() == 1f) openPopup();
+        //otherwise assume the given size is correct
 
         LatLngBounds currentBounds = mapboxMap.getProjection().getVisibleRegion().latLngBounds;
         CameraUpdate moveToPost = CameraUpdateFactory.newLatLng(new LatLng(center.getLatitude() - currentBounds.getLatitudeSpan() / 4, center.getLongitude()));
@@ -238,12 +245,16 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void clickPost(Post post) {
+        clickPost(post, false);
+    }
+
+    void clickPost(Post post, boolean addToBackStack) {
         Log.d("post clicked", "id=" + post.id);
         Bundle bundle = new Bundle();
         bundle.putString(PostFragment.POST_KEY, new Gson().toJson(post));
         PostFragment postFragment = new PostFragment();
         postFragment.setArguments(bundle);
-        initialFragmentOpen(postFragment, post.location());
+        initialFragmentOpen(postFragment, post.location(), addToBackStack);
     }
 
     LatLng computeCenter(List<Post> posts) {
@@ -264,7 +275,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         PostListFragment postListFragment = new PostListFragment();
         postListFragment.setArguments(bundle);
 
-        initialFragmentOpen(postListFragment, computeCenter(posts));
+        initialFragmentOpen(postListFragment, computeCenter(posts), false);
     }
 
     public boolean onMapClick(@NonNull LatLng point) {
@@ -422,16 +433,16 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
             findViewById(R.id.spinner).setVisibility(View.GONE);
         });
 
-        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
-            if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
-                FragmentManager.BackStackEntry lastEntry = getSupportFragmentManager().getBackStackEntryAt(getSupportFragmentManager().getBackStackEntryCount() - 1);
-                Log.d("back-stack", "small: " + lastEntry.getName());
-                if (!lastEntry.getName().equals(String.valueOf(isInfoFragmentSmall()))) {
-                    toggleInfoFragmentSize();
-                }
-            }
-        });
         getInitialLocation();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (getSupportFragmentManager().getBackStackEntryCount() == 0 && infoFragmentSize() != 1f) {
+            removeInfoFragment();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override
