@@ -31,6 +31,7 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -161,12 +162,27 @@ public class SubmitActivity extends BackendActivity {
 
         @Override
         protected JSONObject doInBackground(Post... posts) {
+            try {
+                JSONObject postingInfo = Backend.willExceedPostLimit();
+                if (postingInfo.getBoolean("alert")) {
+                    return new JSONObject().put("status", false).put("message", "post #" + (postingInfo.getInt("posts") + 1) + " with limit of " + postingInfo.getInt("limit"));
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
             return Backend.submitPost(posts[0]);
         }
 
         @Override
         protected void onPostExecute(JSONObject jsonObject) {
             try {
+
+                if (!jsonObject.has("status") || !jsonObject.has("message")) {
+                    jsonObject.put("status", false);
+                    jsonObject.put("message", "error submitting post");
+                }
+
                 if (jsonObject.getBoolean("status")) {
                     finish();
                 } else {
@@ -184,9 +200,6 @@ public class SubmitActivity extends BackendActivity {
 
         @Override
         protected void onPreExecute() {
-            //findViewById(R.id.submit_image_loading).setVisibility(View.VISIBLE);
-            //findViewById(R.id.submit_image).setVisibility(View.INVISIBLE);
-
             RotateAnimation rotate = new RotateAnimation(
                     0, 360,
                     Animation.RELATIVE_TO_SELF, 0.5f,
@@ -211,8 +224,6 @@ public class SubmitActivity extends BackendActivity {
         @Override
         protected void onPostExecute(Bitmap bitmap) {
             ((ImageView) findViewById(R.id.submit_image_view)).setImageBitmap(bitmap);
-            //findViewById(R.id.submit_image_loading).setVisibility(View.INVISIBLE);
-            //findViewById(R.id.submit_image).setVisibility(View.VISIBLE);
             findViewById(R.id.submit_image).clearAnimation();
 
             findViewById(R.id.submit_image).animate().rotation(45f).setInterpolator(new LinearInterpolator());

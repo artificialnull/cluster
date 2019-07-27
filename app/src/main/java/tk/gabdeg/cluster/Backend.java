@@ -132,16 +132,6 @@ public class Backend {
         return null;
     }
 
-    public static boolean getStarredStatus(int postID) {
-        try {
-            JSONObject resp = new JSONObject(postJSON(new URL(server + "/post/" + postID + "/starred"), new JSONObject()));
-            if (resp.getBoolean("status")) {
-                return resp.getBoolean("starred");
-            }
-        } catch (Exception e) {}
-        return false;
-    }
-
     public static boolean setStarredStatus(int postID, boolean starred) {
         try {
             JSONObject resp = new JSONObject(postJSON(new URL(server + "/post/" + postID + "/star"), new JSONObject("{\"star\": " + starred + "}")));
@@ -179,6 +169,15 @@ public class Backend {
     public static JSONObject verifyProfile() {
         try {
             return new JSONObject(postJSON(new URL(server + "/verify"), new JSONObject()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static JSONObject willExceedPostLimit() {
+        try {
+            return new JSONObject(postJSON(new URL(server + "/me/limitinfo"), new JSONObject()));
         } catch (Exception e) {
             e.printStackTrace();
             return null;
