@@ -90,7 +90,7 @@ public class PostListFragment extends InfoFragment {
             recyclerView.setAdapter(new PostAdapter(activity, posts, toOpen -> {
                 size = activity.infoFragmentSize();
                 activity.clickPost(toOpen, true);
-            }));
+            }, null));
 
             Post recent = posts.get(0);
             for (Post post : posts) {

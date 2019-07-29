@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -103,6 +104,8 @@ public class SubmitActivity extends BackendActivity {
         put = new Gson().fromJson(getIntent().getStringExtra(LOCATION_KEY), Post.class);
         ((TextView) findViewById(R.id.submit_address)).setText(put.latitude + ", " + put.longitude);
         ((EditText) findViewById(R.id.submit_text)).setText(put.text, TextView.BufferType.EDITABLE);
+        Log.d("submit", put.image != null ? put.image : "no image attached");
+
 
         findViewById(R.id.submit_image).setOnClickListener(
                 v -> {
@@ -164,7 +167,7 @@ public class SubmitActivity extends BackendActivity {
         protected JSONObject doInBackground(Post... posts) {
             try {
                 JSONObject postingInfo = Backend.willExceedPostLimit();
-                if (postingInfo.getBoolean("alert")) {
+                if (postingInfo.getBoolean("alert") && posts[0].id == 0) {
                     return new JSONObject().put("status", false).put("message", "post #" + (postingInfo.getInt("posts") + 1) + " with limit of " + postingInfo.getInt("limit"));
                 }
             } catch (JSONException e) {

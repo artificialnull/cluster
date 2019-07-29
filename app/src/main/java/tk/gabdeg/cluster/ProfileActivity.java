@@ -5,6 +5,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -45,6 +46,10 @@ public class ProfileActivity extends BackendActivity {
     void quitToPost(Post target) {
         setResult(RESULT_OK, new Intent().putExtra(PROFILE_POST_OPEN, new Gson().toJson(target)));
         finish();
+    }
+
+    void openEditor(Post target) {
+        startActivity(new Intent(this, SubmitActivity.class).putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(target)));
     }
 
     private class GetProfileTask extends AsyncTask<Void, Void, User> {
@@ -90,7 +95,7 @@ public class ProfileActivity extends BackendActivity {
             RecyclerView recyclerView = findViewById(R.id.profile_post_list);
             recyclerView.addItemDecoration(new DividerItemDecoration(recyclerView.getContext(), new LinearLayoutManager(getApplicationContext()).getOrientation()));
             recyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-            recyclerView.setAdapter(new PostAdapter(getApplicationContext(), posts, ProfileActivity.this::quitToPost));
+            recyclerView.setAdapter(new PostAdapter(getApplicationContext(), posts, ProfileActivity.this::quitToPost, ProfileActivity.this::openEditor));
 
             ((ProgressBar) findViewById(R.id.post_limit_progress)).setIndeterminate(false);
             ((ProgressBar) findViewById(R.id.post_limit_progress)).setProgress((int) (user.limitProgress * 100));
