@@ -104,8 +104,10 @@ public class SubmitActivity extends BackendActivity {
         put = new Gson().fromJson(getIntent().getStringExtra(LOCATION_KEY), Post.class);
         ((TextView) findViewById(R.id.submit_address)).setText(put.latitude + ", " + put.longitude);
         ((EditText) findViewById(R.id.submit_text)).setText(put.text, TextView.BufferType.EDITABLE);
-        Log.d("submit", put.image != null ? put.image : "no image attached");
-
+        Log.d("submit", put.image != null && !put.image.isEmpty() ? put.image : "no image attached");
+        if (put.image != null && !put.image.isEmpty() && put.id != 0) {
+            new GetPhotoTask().execute();
+        }
 
         findViewById(R.id.submit_image).setOnClickListener(
                 v -> {
@@ -241,6 +243,17 @@ public class SubmitActivity extends BackendActivity {
             animation.setDuration(250);
             animation.setFillAfter(true);
             findViewById(R.id.submit_image_view).startAnimation(animation);
+        }
+    }
+
+    private class GetPhotoTask extends SetPhotoTask {
+        @Override
+        protected Bitmap doInBackground(Void... voids) {
+            String imageStr = Backend.getPostImage(put.id);
+            put.image = imageStr;
+            byte[] decoded = Base64.decode(imageStr.getBytes(), Base64.DEFAULT);
+            imageCaptured = true;
+            return BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
         }
     }
 
