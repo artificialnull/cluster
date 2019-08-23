@@ -42,7 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class SubmitActivity extends BackendActivity {
+public class SubmitActivity extends BackendActivity implements ConfirmPostSubmissionDialog.ConfirmPostSubmissionDialogListener {
 
     public static final String LOCATION_KEY = "location_serialized";
     public static final int CAMERA_CAPTURE = 1;
@@ -151,11 +151,23 @@ public class SubmitActivity extends BackendActivity {
         findViewById(R.id.submit_button).setOnClickListener(
                 v -> {
                     put.text = ((EditText) findViewById(R.id.submit_text)).getText().toString();
-                    new SubmitPostTask().execute(put);
+                    new SubmitPostWithCheckTask().execute(put);
                 }
         );
 
         new GetAddressTask(this).execute(new LatLng(put.latitude, put.longitude));
+    }
+
+    @Override
+    public void onDialogPositiveClick(ConfirmPostSubmissionDialog dialog) {
+        new SubmitPostTask().execute(dialog.approved);
+    }
+
+    @Override
+    public void onDialogNegativeClick(ConfirmPostSubmissionDialog dialog) {
+        Snackbar.make(findViewById(R.id.submit_layout), "Post not submitted", Snackbar.LENGTH_LONG).show();
+        ((FloatingActionButton) findViewById(R.id.submit_button)).setImageResource(R.drawable.submit_post);
+        findViewById(R.id.spinner).setVisibility(View.INVISIBLE);
     }
 
     private class SubmitPostTask extends AsyncTask<Post, Void, JSONObject> {
@@ -167,15 +179,6 @@ public class SubmitActivity extends BackendActivity {
 
         @Override
         protected JSONObject doInBackground(Post... posts) {
-            try {
-                JSONObject postingInfo = Backend.willExceedPostLimit();
-                if (postingInfo.getBoolean("alert") && posts[0].id == 0) {
-                    return new JSONObject().put("status", false).put("message", "post #" + (postingInfo.getInt("posts") + 1) + " with limit of " + postingInfo.getInt("limit"));
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-                return null;
-            }
             return Backend.submitPost(posts[0]);
         }
 
@@ -196,6 +199,36 @@ public class SubmitActivity extends BackendActivity {
                     findViewById(R.id.spinner).setVisibility(View.INVISIBLE);
                 }
             } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private class SubmitPostWithCheckTask extends AsyncTask<Post, Void, JSONObject> {
+
+        private Post put;
+
+        @Override
+        protected void onPreExecute() {
+            ((FloatingActionButton) findViewById(R.id.submit_button)).setImageDrawable(null);
+            findViewById(R.id.spinner).setVisibility(View.VISIBLE);
+        }
+
+        @Override
+        protected JSONObject doInBackground(Post... posts) {
+            put = posts[0];
+            return Backend.willExceedPostLimit();
+        }
+
+        @Override
+        protected void onPostExecute(JSONObject jsonObject) {
+            try {
+                if (jsonObject.getBoolean("alert") && put.id == 0) {
+                    ConfirmPostSubmissionDialog.newInstance(put, jsonObject.getInt("limit")).show(getSupportFragmentManager(), "dialog");
+                } else {
+                    new SubmitPostTask().execute(put);
+                }
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
         }

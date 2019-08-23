@@ -30,6 +30,14 @@ public class PostFragment extends InfoFragment {
 
     public static String POST_KEY = "post_serialized";
 
+    static PostFragment newInstance(Post post) {
+        PostFragment fragment = new PostFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(PostFragment.POST_KEY, new Gson().toJson(post));
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
     String hash = "";
     String imageHash = "";
     int postID = 0;
@@ -148,6 +156,12 @@ public class PostFragment extends InfoFragment {
                 return;
             }
             if (post.user != null) {
+
+                ViewGroup.LayoutParams params = layout.findViewById(R.id.bottom_padding_stupid).getLayoutParams();
+                params.height = layout.findViewById(R.id.post_user_layout).getMeasuredHeight();
+                layout.findViewById(R.id.bottom_padding_stupid).setLayoutParams(params);
+                Log.d("height of the  layout", params.height + "");
+
                 formatPost(post);
                 ((CheckBox) layout.findViewById(R.id.star_button)).setChecked(post.starred);
                 layout.findViewById(R.id.star_button).setEnabled(true);

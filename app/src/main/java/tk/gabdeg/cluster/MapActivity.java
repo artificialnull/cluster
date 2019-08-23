@@ -16,6 +16,8 @@ import android.transition.TransitionManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
@@ -102,22 +104,15 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         return String.format("#%06X", (0xFFFFFF & mixed));
     }
 
-    int getNavBarHeight() {
-        Resources resources = getResources();
-        int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            return resources.getDimensionPixelSize(resourceId);
-        }
-        return 0;
-    }
-
     int getStatusBarHeight() {
+
         Resources resources = getResources();
         int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
             return resources.getDimensionPixelSize(resourceId);
         }
         return 0;
+
     }
 
     LatLng getLatLng(Location loc) {
@@ -228,6 +223,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         fragmentTransaction.commit();
         fragmentManager.executePendingTransactions();
 
+        Log.d("info-fragment-size", ""+infoFragmentSize());
+
         if (infoFragmentSize() == 1f) openPopup();
         //otherwise assume the given size is correct
 
@@ -246,10 +243,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     void clickPost(Post post, boolean addToBackStack) {
         Log.d("post clicked", "id=" + post.id);
-        Bundle bundle = new Bundle();
-        bundle.putString(PostFragment.POST_KEY, new Gson().toJson(post));
-        PostFragment postFragment = new PostFragment();
-        postFragment.setArguments(bundle);
+        PostFragment postFragment = PostFragment.newInstance(post);
         initialFragmentOpen(postFragment, post.location(), addToBackStack);
     }
 
@@ -264,10 +258,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void clickCluster(List<Post> posts) {
-        Bundle bundle = new Bundle();
-        bundle.putString(PostListFragment.POST_LIST_KEY, new Gson().toJson(posts));
-        PostListFragment postListFragment = new PostListFragment();
-        postListFragment.setArguments(bundle);
+        PostListFragment postListFragment = PostListFragment.newInstance(posts);
         initialFragmentOpen(postListFragment, computeCenter(posts), false);
     }
 
@@ -381,6 +372,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         Mapbox.getInstance(this, APIKey.key);
         setContentView(R.layout.activity_main);
+
         ((NavigationView) findViewById(R.id.navigation_drawer)).setNavigationItemSelectedListener(menuItem -> {
             ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(Gravity.LEFT);
             switch (menuItem.getItemId()) {

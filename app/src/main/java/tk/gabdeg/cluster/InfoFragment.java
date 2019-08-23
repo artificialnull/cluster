@@ -57,7 +57,7 @@ public class InfoFragment extends Fragment {
                 return true;
             });
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) layout.findViewById(R.id.post_content_layout).getLayoutParams();
-            params.bottomMargin += ((MapActivity) getActivity()).getNavBarHeight();
+            //params.bottomMargin += ((MapActivity) getActivity()).getNavBarHeight();
         }
     }
 }

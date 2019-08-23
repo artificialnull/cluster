@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/primaryColor"
+    android:fitsSystemWindows="true"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <RelativeLayout
@@ -122,6 +123,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
         app:layout_constraintTop_toBottomOf="@+id/post_user_layout"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -147,9 +149,14 @@
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
                 android:scaleType="fitCenter"
-                android:paddingBottom="16dp"
                 android:id="@+id/post_image"
                 android:contentDescription="@string/content"
+                />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:id="@+id/bottom_padding_stupid"
                 />
 
         </LinearLayout>

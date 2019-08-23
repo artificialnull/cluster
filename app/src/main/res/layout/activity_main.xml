@@ -43,7 +43,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:id="@+id/infoFrameExtent"
-                app:layout_constraintGuide_percent="0.5"
+                app:layout_constraintGuide_percent="1"
                 />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -88,6 +88,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 android:id="@+id/infoFrame"
                 android:visibility="gone"
+                android:fitsSystemWindows="true"
                 />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

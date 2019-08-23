@@ -24,6 +24,14 @@ public class PostListFragment extends InfoFragment {
 
     public static String POST_LIST_KEY = "post_list_serialized";
 
+    static PostListFragment newInstance(List<Post> posts) {
+        PostListFragment fragment = new PostListFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(PostListFragment.POST_LIST_KEY, new Gson().toJson(posts));
+        fragment.setArguments(bundle);
+        return fragment;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
