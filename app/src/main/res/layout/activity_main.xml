@@ -46,28 +46,50 @@
                 app:layout_constraintGuide_percent="1"
                 />
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/postFab"
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/new_post"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent"
-                android:layout_marginBottom="16dp"
-                android:layout_marginEnd="16dp"
-                />
+                android:id="@+id/fabContainer"
+                >
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/locateFab"
-                app:backgroundTint="@color/locationColor"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/find_location"
-                app:layout_constraintBottom_toTopOf="@+id/postFab"
-                app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginBottom="16dp"
-                android:layout_marginEnd="16dp"
-                />
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/postFab"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/new_post"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginEnd="16dp"
+                    />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/trendingFab"
+                    app:backgroundTint="@color/primaryTextColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/trending"
+                    app:layout_constraintBottom_toTopOf="@+id/postFab"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginEnd="16dp"
+                    />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/locateFab"
+                    app:backgroundTint="@color/locationColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/find_location"
+                    app:layout_constraintBottom_toTopOf="@+id/trendingFab"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginEnd="16dp"
+                    />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <ImageButton
                 android:layout_width="wrap_content"

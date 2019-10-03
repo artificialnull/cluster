@@ -16,8 +16,6 @@ import android.transition.TransitionManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowInsets;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
@@ -105,14 +103,12 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     int getStatusBarHeight() {
-
         Resources resources = getResources();
         int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
             return resources.getDimensionPixelSize(resourceId);
         }
         return 0;
-
     }
 
     LatLng getLatLng(Location loc) {
@@ -144,8 +140,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         popup.setGuidelinePercent(R.id.infoFrameExtent, 0.5f);
         popup.setVisibility(R.id.infoFrame, ConstraintSet.VISIBLE);
-        popup.setVisibility(R.id.locateFab, ConstraintSet.GONE);
-        popup.setVisibility(R.id.postFab, ConstraintSet.GONE);
+        popup.setVisibility(R.id.fabContainer, ConstraintSet.GONE);
 
         Transition overshoot = new ChangeBounds();
         overshoot.setInterpolator(new DecelerateInterpolator());
@@ -159,8 +154,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         expanded.setGuidelinePercent(R.id.infoFrameExtent, 0f);
         expanded.setVisibility(R.id.infoFrame, ConstraintSet.VISIBLE);
-        expanded.setVisibility(R.id.locateFab, ConstraintSet.GONE);
-        expanded.setVisibility(R.id.postFab, ConstraintSet.GONE);
+        expanded.setVisibility(R.id.fabContainer, ConstraintSet.GONE);
 
         Transition overshoot = new ChangeBounds();
         overshoot.setInterpolator(new DecelerateInterpolator());
@@ -174,8 +168,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         closed.setGuidelinePercent(R.id.infoFrameExtent, 1);
         closed.setVisibility(R.id.infoFrame, ConstraintSet.GONE);
-        closed.setVisibility(R.id.locateFab, ConstraintSet.VISIBLE);
-        closed.setVisibility(R.id.postFab, ConstraintSet.VISIBLE);
+        closed.setVisibility(R.id.fabContainer, ConstraintSet.VISIBLE);
 
         Transition transition = new Slide();
         transition.addListener(new Transition.TransitionListener() {
@@ -223,7 +216,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         fragmentTransaction.commit();
         fragmentManager.executePendingTransactions();
 
-        Log.d("info-fragment-size", ""+infoFragmentSize());
+        Log.d("info-fragment-size", "" + infoFragmentSize());
 
         if (infoFragmentSize() == 1f) openPopup();
         //otherwise assume the given size is correct
@@ -245,6 +238,11 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         Log.d("post clicked", "id=" + post.id);
         PostFragment postFragment = PostFragment.newInstance(post);
         initialFragmentOpen(postFragment, post.location(), addToBackStack);
+    }
+
+    void openTrending() {
+        initialFragmentOpen(TrendingPostsFragment.newInstance(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation())), getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()), false);
+        openExpanded();
     }
 
     LatLng computeCenter(List<Post> posts) {
@@ -388,8 +386,7 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
         findViewById(R.id.navigation_button).setOnClickListener(v -> ((DrawerLayout) findViewById(R.id.drawer_layout)).openDrawer(Gravity.LEFT));
         ((NavigationView) findViewById(R.id.navigation_drawer)).getHeaderView(0).setPadding(0, getStatusBarHeight(), 0, 0);
 
-        FloatingActionButton postFab = findViewById(R.id.postFab);
-        postFab.setOnClickListener(v -> {
+        findViewById(R.id.postFab).setOnClickListener(v -> {
             if (mapboxMap.getLocationComponent().getLastKnownLocation() != null) {
                 Location location = mapboxMap.getLocationComponent().getLastKnownLocation();
                 Post put = new Post();
@@ -398,8 +395,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
                 startActivityForResult(new Intent(this, SubmitActivity.class).putExtra(SubmitActivity.LOCATION_KEY, new Gson().toJson(put)), SubmitActivity.SUBMIT_FINISHED);
             }
         });
-        FloatingActionButton locateFab = findViewById(R.id.locateFab);
-        locateFab.setOnClickListener(v -> jumpToUserLocation());
+        findViewById(R.id.locateFab).setOnClickListener(v -> jumpToUserLocation());
+        findViewById(R.id.trendingFab).setOnClickListener(v -> openTrending());
 
         mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
@@ -417,11 +414,9 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
     @Override
     public void onBackPressed() {
-        if (getSupportFragmentManager().getBackStackEntryCount() == 0 && infoFragmentSize() != 1f) {
+        if (getSupportFragmentManager().getBackStackEntryCount() == 0 && infoFragmentSize() != 1f)
             removeInfoFragment();
-            return;
-        }
-        super.onBackPressed();
+        else super.onBackPressed();
     }
 
     @Override
@@ -489,11 +484,8 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
 
         @Override
         protected void onPostExecute(FeatureCollection featureCollection) {
-            if (featureCollection != null) {
-                loadMap(featureCollection);
-            } else {
-                new GetPostsTask().execute(loc);
-            }
+            if (featureCollection != null) loadMap(featureCollection);
+            else new GetPostsTask().execute(loc);
         }
     }
 

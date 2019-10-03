@@ -20,6 +20,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 public class Backend {
     static String server = "http://73.76.97.119:5000";
@@ -107,7 +108,7 @@ public class Backend {
 
             return collection;
 
-        }  catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -138,7 +139,8 @@ public class Backend {
             if (resp.getBoolean("status")) {
                 return resp.getBoolean("starred");
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         return false;
     }
 
@@ -180,6 +182,20 @@ public class Backend {
             return new JSONObject(postJSON(new URL(server + "/me/limitinfo"), new JSONObject()));
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static ArrayList<Post> getTrendingPosts(LatLng location) {
+        try {
+            ArrayList<Post> filledPostList = new ArrayList<>();
+            JSONArray postList = new JSONArray(postJSON(new URL(server + "/trending"), new JSONObject().put("location", new JSONArray().put(location.getLatitude()).put(location.getLongitude()))));
+            for (int i = 0; i < postList.length(); i++) {
+                JSONObject post = postList.getJSONObject(i);
+                filledPostList.add(getPost(post.getInt("id")));
+            }
+            return filledPostList;
+        } catch (Exception e) {
             return null;
         }
     }

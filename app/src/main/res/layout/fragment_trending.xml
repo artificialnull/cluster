@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:background="@color/primaryColor"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/post_user_layout">
+
+        <TextSwitcher
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_toStartOf="@+id/toggle_button"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:id="@+id/post_user"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:lines="1"
+                />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:lines="1"
+                />
+        </TextSwitcher>
+
+        <TextSwitcher
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/post_user"
+            android:layout_below="@+id/post_user"
+            android:layout_marginStart="0dp"
+            android:layout_marginBottom="8dp"
+            android:id="@+id/post_time"
+            >
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:lines="1"
+                />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:lines="1"
+                />
+        </TextSwitcher>
+
+        <ImageButton
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/close"
+            android:tint="@color/secondaryColor"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:contentDescription="@string/close_text"
+            android:id="@+id/close_button"
+            android:background="?selectableItemBackgroundBorderless"
+            />
+
+        <ImageButton
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="0dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@+id/close_button"
+            android:layout_centerVertical="true"
+            android:src="@drawable/chevron_up"
+            android:tint="@color/secondaryColor"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:contentDescription="@string/close_text"
+            android:id="@+id/toggle_button"
+            android:background="?selectableItemBackgroundBorderless"
+            android:visibility="gone"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_below="@+id/post_time"
+            android:background="@color/secondaryColor"/>
+
+    </RelativeLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:scrollbars="vertical"
+        android:layout_weight="1"
+        android:id="@+id/post_content_layout"
+        />
+
+</LinearLayout>
