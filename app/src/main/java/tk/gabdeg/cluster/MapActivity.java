@@ -241,7 +241,9 @@ public class MapActivity extends BackendActivity implements MapboxMap.OnMapClick
     }
 
     void openTrending() {
-        initialFragmentOpen(TrendingPostsFragment.newInstance(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation())), getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()), false);
+        Log.d("trending", "opening!");
+        TrendingPostsFragment trendingPostsFragment = TrendingPostsFragment.newInstance(getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()));
+        initialFragmentOpen(trendingPostsFragment, getLatLng(mapboxMap.getLocationComponent().getLastKnownLocation()), false);
         openExpanded();
     }
 

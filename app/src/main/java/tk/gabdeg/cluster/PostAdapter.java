@@ -87,7 +87,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.setText(R.id.star_count, Integer.toString(put.stars));
 
         ((CheckBox) holder.view.findViewById(R.id.star_button)).setChecked(put.starred);
-        holder.view.findViewById(R.id.open_button).setOnClickListener(v -> onPostOpen.open(put));
+        holder.view.setOnClickListener(v -> onPostOpen.open(put));
+        holder.view.findViewById(R.id.open_button).setVisibility(View.GONE);
         holder.view.findViewById(R.id.edit_button).setOnClickListener(v -> onPostEdit.edit(put));
     }
 
