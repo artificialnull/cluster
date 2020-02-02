@@ -2,6 +2,8 @@ package tk.gabdeg.cluster;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.util.LruCache;
 
 import com.cocoahero.android.geojson.Feature;
 import com.cocoahero.android.geojson.FeatureCollection;
@@ -29,6 +31,8 @@ public class Backend {
     static final String PREF_PASSWORD = "cluster_password";
     static String phone = "";
     static String password = "";
+
+    private static LruCache<int, Bitmap> imageCache;
 
     static boolean setCredentials(Context ctx) {
         SharedPreferences preferences = ctx.getSharedPreferences(ctx.getString(R.string.preferenceKey), Context.MODE_PRIVATE);
